@@ -16,13 +16,14 @@ public class Cabin {
     private boolean isAvailable;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean isFeatured;
 
     // Constructors, getters, and setters
     public Cabin() {}
 
     public Cabin(int id, String name, String description, String location, double pricePerNight,
                  int maxGuests, int bedrooms, int bathrooms, String amenities,
-                 String imageUrl, boolean isAvailable) {
+                 String imageUrl, boolean isAvailable, boolean isFeatured) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -34,6 +35,7 @@ public class Cabin {
         this.amenities = amenities;
         this.imageUrl = imageUrl;
         this.isAvailable = isAvailable;
+        this.isFeatured = isFeatured;
     }
     public int getId() {
         return id;
@@ -150,6 +152,15 @@ public class Cabin {
         this.updatedAt = updatedAt;
     }
 
+
+    public boolean isFeatured() {
+        return isFeatured;
+    }
+
+    public void setFeatured(boolean featured) {
+        isFeatured = featured;
+    }
+
     @Override
     public String toString() {
         return "Cabin{" +
@@ -166,6 +177,7 @@ public class Cabin {
                 ", isAvailable=" + isAvailable +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
+                ", isFeatured" + isFeatured+
                 '}';
     }
 }

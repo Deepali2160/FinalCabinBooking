@@ -44,7 +44,7 @@
             </div>
             <ul class="sidebar-menu">
                 <li><a href="#" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="#"><i class="fas fa-home"></i> Cabins</a></li>
+                <li><a href="cabin.jsp"><i class="fas fa-home"></i> Cabins</a></li>
                 <li><a href="#"><i class="fas fa-calendar-check"></i> Bookings</a></li>
                 <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
                 <li><a href="#"><i class="fas fa-chart-line"></i> Reports</a></li>
