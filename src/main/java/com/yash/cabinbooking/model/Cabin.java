@@ -161,24 +161,6 @@ public class Cabin {
         isFeatured = featured;
     }
 
-    @Override
-    public String toString() {
-        return "Cabin{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", location='" + location + '\'' +
-                ", pricePerNight=" + pricePerNight +
-                ", maxGuests=" + maxGuests +
-                ", bedrooms=" + bedrooms +
-                ", bathrooms=" + bathrooms +
-                ", amenities='" + amenities + '\'' +
-                ", imageUrl='" + imageUrl + '\'' +
-                ", isAvailable=" + isAvailable +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                ", isFeatured" + isFeatured+
-                '}';
-    }
+
 }
 

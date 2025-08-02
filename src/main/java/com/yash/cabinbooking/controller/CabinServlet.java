@@ -1,143 +1,352 @@
-package com.yash.cabinbooking.servlet;
+package com.yash.cabinbooking.controller;
 
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import com.yash.cabinbooking.model.Cabin;
 import com.yash.cabinbooking.service.CabinService;
 import com.yash.cabinbooking.service.impl.CabinServiceImpl;
-
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.*;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-@WebServlet("/admin/cabins")
-
+@WebServlet("/admin/cabin")
 public class CabinServlet extends HttpServlet {
-
     private CabinService cabinService;
 
     @Override
-    public void init() {
+    public void init() throws ServletException {
         cabinService = new CabinServiceImpl();
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String action = request.getParameter("action");
+        if (action == null) action = "list";
 
-        String action = req.getParameter("action");
-        String idParam = req.getParameter("id");
-
-        if ("view".equalsIgnoreCase(action)) {
-            List<Cabin> cabins = cabinService.getAllCabins();
-            req.setAttribute("cabins", cabins);
-            req.getRequestDispatcher("/admin/cabin.jsp").forward(req, resp);
-            return;
+        try {
+            switch (action) {
+                case "add":
+                    showCabinForm(request, response);
+                    break;
+                case "edit":
+                    showEditForm(request, response);
+                    break;
+                case "delete":
+                    deleteCabin(request, response);
+                    break;
+                case "toggleAvailability":
+                    toggleAvailability(request, response);
+                    break;
+                case "toggleFeatured":
+                    toggleFeatured(request, response);
+                    break;
+                default:
+                    listCabins(request, response);
+                    break;
+            }
+        } catch (Exception e) {
+            handleError(request, response, "Error processing request: " + e.getMessage());
         }
-
-        if ("delete".equals(action) && idParam != null) {
-            int id = Integer.parseInt(idParam);
-            cabinService.deleteCabin(id);
-            resp.sendRedirect("cabin?action=view");
-            return;
-        }
-
-        if ("toggleAvailability".equals(action) && idParam != null) {
-            int id = Integer.parseInt(idParam);
-            boolean status = Boolean.parseBoolean(req.getParameter("status"));
-            cabinService.toggleAvailability(id, status);
-            resp.sendRedirect("cabin?action=view");
-            return;
-        }
-
-        if ("toggleFeatured".equals(action) && idParam != null) {
-            int id = Integer.parseInt(idParam);
-            boolean status = Boolean.parseBoolean(req.getParameter("status"));
-            cabinService.toggleFeatured(id, status);
-            resp.sendRedirect("cabin?action=view");
-            return;
-        }
-
-        // default: list all cabins
-        List<Cabin> cabinList = cabinService.getAllCabins();
-        req.setAttribute("cabins", cabinList);
-        req.getRequestDispatcher("/admin/cabin.jsp").forward(req, resp);
     }
-
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String action = request.getParameter("action");
 
-        String idParam = req.getParameter("id");
-
-        Cabin cabin = new Cabin();
-        cabin.setName(req.getParameter("name"));
-        cabin.setDescription(req.getParameter("description"));
-        cabin.setLocation(req.getParameter("location"));
-
-        // Price
-        double pricePerNight = 0.0;
-        String pricePerNightParam = req.getParameter("pricePerNight");
-        if (pricePerNightParam != null && !pricePerNightParam.trim().isEmpty()) {
-            try {
-                pricePerNight = Double.parseDouble(pricePerNightParam.trim());
-            } catch (NumberFormatException ignored) {}
-        }
-        cabin.setPricePerNight(pricePerNight);
-
-        // Guests
-        int maxGuests = 0;
-        String maxGuestsParam = req.getParameter("maxGuests");
-        if (maxGuestsParam != null && !maxGuestsParam.trim().isEmpty()) {
-            try {
-                maxGuests = Integer.parseInt(maxGuestsParam.trim());
-            } catch (NumberFormatException ignored) {}
-        }
-        cabin.setMaxGuests(maxGuests);
-
-        // Bedrooms
-        int bedrooms = 0;
-        String bedroomsParam = req.getParameter("bedrooms");
-        if (bedroomsParam != null && !bedroomsParam.trim().isEmpty()) {
-            try {
-                bedrooms = Integer.parseInt(bedroomsParam.trim());
-            } catch (NumberFormatException ignored) {}
-        }
-        cabin.setBedrooms(bedrooms);
-
-        // Bathrooms
-        int bathrooms = 0;
-        String bathroomsParam = req.getParameter("bathrooms");
-        if (bathroomsParam != null && !bathroomsParam.trim().isEmpty()) {
-            try {
-                bathrooms = Integer.parseInt(bathroomsParam.trim());
-            } catch (NumberFormatException ignored) {}
-        }
-        cabin.setBathrooms(bathrooms);
-
-        // Remaining fields
-        cabin.setAmenities(req.getParameter("amenities"));
-        cabin.setImageUrl(req.getParameter("imageUrl"));
-        cabin.setAvailable("on".equals(req.getParameter("isAvailable")));
-        cabin.setFeatured("on".equals(req.getParameter("isFeatured")));
-
-        boolean isSaved;
-        if (idParam == null || idParam.isEmpty()) {
-            // New cabin
-            isSaved = cabinService.addCabin(cabin);
-        } else {
-            // Update existing cabin
-            cabin.setId(Integer.parseInt(idParam));
-            isSaved = cabinService.updateCabin(cabin);
+        // Handle delete and toggle operations separately (no file upload)
+        if ("delete".equals(action) || "toggleAvailability".equals(action) || "toggleFeatured".equals(action)) {
+            handleSimpleRequest(request, response, action);
+            return;
         }
 
-        if (isSaved) {
-            resp.sendRedirect("cabin?action=view");
-        } else {
-            req.setAttribute("error", "Cabin not saved. Try again.");
-            req.getRequestDispatcher("/admin/cabin.jsp").forward(req, resp);
+        // Handle add/edit operations with file upload
+        if (!ServletFileUpload.isMultipartContent(request)) {
+            request.setAttribute("error", "Form must have enctype=multipart/form-data");
+            listCabins(request, response);
+            return;
+        }
+
+        handleMultipartRequest(request, response);
+    }
+
+    private void handleSimpleRequest(HttpServletRequest request, HttpServletResponse response, String action)
+            throws ServletException, IOException {
+        switch (action) {
+            case "delete":
+                deleteCabin(request, response);
+                break;
+            case "toggleAvailability":
+                toggleAvailability(request, response);
+                break;
+            case "toggleFeatured":
+                toggleFeatured(request, response);
+                break;
+            default:
+                listCabins(request, response);
         }
     }
 
+    private void handleMultipartRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        DiskFileItemFactory factory = new DiskFileItemFactory();
+        ServletFileUpload upload = new ServletFileUpload(factory);
+        Cabin cabin = new Cabin();
+        boolean isEdit = false;
+
+        try {
+            // Create upload directory if it doesn't exist
+            String uploadPath = getServletContext().getRealPath("/images");
+            File uploadDir = new File(uploadPath);
+            if (!uploadDir.exists()) uploadDir.mkdir();
+
+            List<FileItem> items = upload.parseRequest(request);
+            String fileName = "";
+
+            for (FileItem item : items) {
+                if (item.isFormField()) {
+                    processFormField(item, cabin);
+                    if ("id".equals(item.getFieldName()) && !item.getString().isEmpty()) {
+                        isEdit = true;
+                    }
+                } else {
+                    // Process file upload
+                    if (!item.getName().isEmpty()) {
+                        // Generate unique filename to prevent conflicts
+                        fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                                + "_" + new File(item.getName()).getName();
+                        String filePath = uploadPath + File.separator + fileName;
+
+                        // Delete old image if exists during edit
+                        if (isEdit) {
+                            Cabin existingCabin = cabinService.getCabinById(cabin.getId());
+                            if (existingCabin != null && existingCabin.getImageUrl() != null) {
+                                File oldFile = new File(uploadPath + File.separator +
+                                        existingCabin.getImageUrl().replace("images/", ""));
+                                if (oldFile.exists()) oldFile.delete();
+                            }
+                        }
+
+                        item.write(new File(filePath));
+                        cabin.setImageUrl("images/" + fileName);
+                    } else if (isEdit) {
+                        // Keep existing image if no new file was uploaded
+                        Cabin existingCabin = cabinService.getCabinById(cabin.getId());
+                        if (existingCabin != null) {
+                            cabin.setImageUrl(existingCabin.getImageUrl());
+                        }
+                    }
+                }
+            }
+
+            String error = validateCabin(cabin);
+            if (error != null) {
+                request.setAttribute("error", error);
+                if (isEdit) {
+                    showEditForm(request, response);
+                } else {
+                    showCabinForm(request, response);
+                }
+                return;
+            }
+
+            if (isEdit) {
+                cabinService.updateCabin(cabin);
+                request.setAttribute("message", "Cabin updated successfully!");
+            } else {
+                cabin.setCreatedAt(LocalDateTime.now());
+                cabinService.addCabin(cabin);
+                request.setAttribute("message", "Cabin added successfully!");
+            }
+        } catch (Exception e) {
+            handleError(request, response, "Error processing request: " + e.getMessage());
+            return;
+        }
+
+        listCabins(request, response);
+    }
+
+    private void processFormField(FileItem item, Cabin cabin) throws Exception {
+        String fieldName = item.getFieldName();
+        String value = item.getString();
+
+        switch (fieldName) {
+            case "id":
+                if (!value.isEmpty()) cabin.setId(Integer.parseInt(value));
+                break;
+            case "name":
+                cabin.setName(value);
+                break;
+            case "description":
+                cabin.setDescription(value);
+                break;
+            case "location":
+                cabin.setLocation(value);
+                break;
+            case "pricePerNight":
+                cabin.setPricePerNight(Double.parseDouble(value));
+                break;
+            case "maxGuests":
+                cabin.setMaxGuests(Integer.parseInt(value));
+                break;
+            case "bedrooms":
+                cabin.setBedrooms(Integer.parseInt(value));
+                break;
+            case "bathrooms":
+                cabin.setBathrooms(Integer.parseInt(value));
+                break;
+            case "amenities":
+                cabin.setAmenities(value);
+                break;
+            case "isAvailable":
+                cabin.setAvailable("true".equals(value));
+                break;
+            case "isFeatured":
+                cabin.setFeatured("true".equals(value));
+                break;
+        }
+    }
+
+    private String validateCabin(Cabin cabin) {
+        if (cabin.getName() == null || cabin.getName().trim().isEmpty()) {
+            return "Name is required";
+        }
+        if (cabin.getDescription() == null || cabin.getDescription().trim().isEmpty()) {
+            return "Description is required";
+        }
+        if (cabin.getLocation() == null || cabin.getLocation().trim().isEmpty()) {
+            return "Location is required";
+        }
+        if (cabin.getPricePerNight() < 100) {
+            return "Price must be at least 100";
+        }
+        if (cabin.getMaxGuests() < 1) {
+            return "Max guests must be at least 1";
+        }
+        if (cabin.getBedrooms() < 1) {
+            return "Bedrooms must be at least 1";
+        }
+        if (cabin.getBathrooms() < 1) {
+            return "Bathrooms must be at least 1";
+        }
+        if (cabin.getAmenities() == null || cabin.getAmenities().trim().isEmpty()) {
+            return "Amenities are required";
+        }
+        return null;
+    }
+
+    private void listCabins(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            List<Cabin> cabins = cabinService.getAllCabins();
+            request.setAttribute("cabinsList", cabins);
+            RequestDispatcher dispatcher = request.getRequestDispatcher("/admin/cabin.jsp");
+            dispatcher.forward(request, response);
+        } catch (Exception e) {
+            handleError(request, response, "Error loading cabins: " + e.getMessage());
+        }
+    }
+
+    private void showCabinForm(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setAttribute("cabin", new Cabin());
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/admin/cabin.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    private void showEditForm(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            int id = Integer.parseInt(request.getParameter("id"));
+            Cabin cabin = cabinService.getCabinById(id);
+            if (cabin != null) {
+                request.setAttribute("cabin", cabin);
+            } else {
+                request.setAttribute("error", "Cabin not found");
+            }
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Invalid cabin ID");
+        } catch (Exception e) {
+            request.setAttribute("error", "Error loading cabin: " + e.getMessage());
+        }
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/admin/cabin.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    private void deleteCabin(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            int id = Integer.parseInt(request.getParameter("id"));
+            boolean deleted = cabinService.deleteCabin(id);
+
+            if (deleted) {
+                request.setAttribute("message", "Cabin deleted successfully!");
+            } else {
+                request.setAttribute("error", "Failed to delete cabin");
+            }
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Invalid cabin ID");
+        } catch (Exception e) {
+            request.setAttribute("error", "Error deleting cabin: " + e.getMessage());
+        }
+        listCabins(request, response);
+    }
+
+    private void toggleAvailability(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            int id = Integer.parseInt(request.getParameter("id"));
+            boolean available = Boolean.parseBoolean(request.getParameter("available"));
+            Cabin cabin = cabinService.getCabinById(id);
+            if (cabin != null) {
+                cabin.setAvailable(available);
+                cabinService.updateCabin(cabin);
+                request.setAttribute("message", "Availability updated successfully!");
+            } else {
+                request.setAttribute("error", "Cabin not found");
+            }
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Invalid cabin ID");
+        } catch (Exception e) {
+            request.setAttribute("error", "Error updating availability: " + e.getMessage());
+        }
+        listCabins(request, response);
+    }
+
+    private void toggleFeatured(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            int id = Integer.parseInt(request.getParameter("id"));
+            boolean featured = Boolean.parseBoolean(request.getParameter("featured"));
+            Cabin cabin = cabinService.getCabinById(id);
+            if (cabin != null) {
+                cabin.setFeatured(featured);
+                cabinService.updateCabin(cabin);
+                request.setAttribute("message", "Featured status updated successfully!");
+            } else {
+                request.setAttribute("error", "Cabin not found");
+            }
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Invalid cabin ID");
+        } catch (Exception e) {
+            request.setAttribute("error", "Error updating featured status: " + e.getMessage());
+        }
+        listCabins(request, response);
+    }
+
+    private void handleError(HttpServletRequest request, HttpServletResponse response, String errorMessage)
+            throws ServletException, IOException {
+        request.setAttribute("error", errorMessage);
+        listCabins(request, response);
+    }
 }

@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,13 +157,16 @@
       margin-left: 8px;
       color: var(--primary);
     }
+    .error-input {
+      border-color: #e74c3c !important;
+    }
   </style>
 </head>
 <body>
   <nav class="navbar">
     <div class="container">
       <a href="#" class="logo">
-        <i class="fas fa-tree"></i> Cabinnest
+        <i class="fas fa-tree"></i> Cabinest
       </a>
       <div class="theme-toggle">
         <input type="checkbox" id="theme-switch" hidden />
@@ -185,7 +189,7 @@
         <p>Manage your cabin bookings</p>
       </div>
       <ul class="sidebar-menu">
-        <li><a href="dashboard.jsp"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="${pageContext.request.contextPath}/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
         <li><a href="cabin.jsp" class="active"><i class="fas fa-home"></i> Cabins</a></li>
         <li><a href="#"><i class="fas fa-calendar-check"></i> Bookings</a></li>
         <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
@@ -224,9 +228,9 @@
                     <span><i class="fas fa-shower"></i> ${cabin.bathrooms} Baths</span>
                   </div>
                   <p>${fn:escapeXml(cabin.amenities)}</p>
-                  <div class="status" style="${cabin.isAvailable ? 'background:#e2f0d9;color:#27ae60;' : 'background:#f7d6d8;color:#e74c3c;'}">
-                    ${cabin.isAvailable ? 'Available' : 'Not Available'}
-                    <c:if test="${cabin.isFeatured}">
+                 <div class="status" style="${cabin.available ? 'background:#e2f0d9;color:#27ae60;' : 'background:#f7d6d8;color:#e74c3c;'}">
+                    ${cabin.available ? 'Available' : 'Not Available'}
+                    <c:if test="${cabin.featured}">
                       <span style="margin-left: 10px; color: #f1c40f;"><i class="fas fa-star"></i> Featured</span>
                     </c:if>
                   </div>
@@ -245,9 +249,8 @@
                       data-bathrooms="${cabin.bathrooms}"
                       data-amenities="${fn:escapeXml(cabin.amenities)}"
                       data-imageurl="${cabin.imageUrl}"
-                      data-isavailable="${cabin.isAvailable}"
-                      data-isfeatured="${cabin.isFeatured}"
-                    >
+                      data-available="${cabin.available}"
+                      data-featured="${cabin.featured}">
                       <i class="fas fa-edit"></i>
                     </button>
                     <button type="button" class="action-btn delete-btn" title="Delete" data-id="${cabin.id}">
@@ -255,21 +258,21 @@
                     </button>
                   </div>
                   <div style="display:flex;gap:8px; margin-top: 10px;">
-                    <form action="${pageContext.request.contextPath}/admin/cabins" method="post" style="display:inline">
+                    <form action="${pageContext.request.contextPath}/admin/cabin" method="post" style="display:inline">
                       <input type="hidden" name="action" value="toggleAvailability"/>
                       <input type="hidden" name="id" value="${cabin.id}"/>
-                      <input type="hidden" name="available" value="${not cabin.isAvailable}"/>
+                      <input type="hidden" name="available" value="${!cabin.available}"/>
                       <label class="switch" title="Toggle Availability">
-                        <input type="checkbox" ${cabin.isAvailable ? 'checked' : ''} onchange="this.form.submit()">
+                        <input type="checkbox" ${cabin.available ? 'checked' : ''} onchange="this.form.submit()">
                         <span class="slider round"></span>
                       </label>
                     </form>
-                    <form action="${pageContext.request.contextPath}/admin/cabins" method="post" style="display:inline">
+                    <form action="${pageContext.request.contextPath}/admin/cabin" method="post" style="display:inline">
                       <input type="hidden" name="action" value="toggleFeatured"/>
                       <input type="hidden" name="id" value="${cabin.id}"/>
-                      <input type="hidden" name="featured" value="${not cabin.isFeatured}"/>
+                      <input type="hidden" name="featured" value="${!cabin.featured}"/>
                       <label class="switch" title="Toggle Featured">
-                        <input type="checkbox" ${cabin.isFeatured ? 'checked' : ''} onchange="this.form.submit()">
+                        <input type="checkbox" ${cabin.featured ? 'checked' : ''} onchange="this.form.submit()">
                         <span class="slider round"></span>
                       </label>
                     </form>
@@ -291,7 +294,7 @@
     <div class="modal-content" role="document">
       <span id="modalCloseBtn" class="close" title="Close">&times;</span>
       <h2 id="modalTitle">Add New Cabin</h2>
-      <form id="cabinForm" action="${pageContext.request.contextPath}/admin/cabins" method="post" enctype="multipart/form-data" novalidate>
+      <form id="cabinForm" action="${pageContext.request.contextPath}/admin/cabin" method="post" enctype="multipart/form-data" novalidate>
         <input type="hidden" name="action" id="formAction" value="add" />
         <input type="hidden" name="id" id="cabinId" />
 
@@ -334,8 +337,8 @@
         <img id="imagePreview" alt="Image Preview" />
 
         <div style="margin-top:15px;">
-          <label><input type="checkbox" id="cabinAvailable" name="isAvailable" checked /> Available</label>
-          <label style="margin-left:20px;"><input type="checkbox" id="cabinFeatured" name="isfeatured" /> Featured</label>
+          <label><input type="checkbox" id="cabinAvailable" name="isAvailable" value="true" checked /> Available</label>
+          <label style="margin-left:20px;"><input type="checkbox" id="cabinFeatured" name="isFeatured" value="true" /> Featured</label>
         </div>
 
         <button type="submit" class="btn primary" style="margin-top:15px;">Save</button>
@@ -348,7 +351,7 @@
     <div class="modal-content" role="document" style="max-width:400px; text-align:center;">
       <span id="deleteCloseBtn" class="close" title="Close">&times;</span>
       <h3>Are you sure you want to delete this cabin?</h3>
-      <form id="deleteForm" action="${pageContext.request.contextPath}/admin/cabins" method="post">
+      <form id="deleteForm" action="${pageContext.request.contextPath}/admin/cabin" method="post">
         <input type="hidden" name="action" value="delete" />
         <input type="hidden" id="deleteCabinId" name="id" />
         <button type="submit" class="btn primary" style="margin:15px 0;">Yes, Delete</button>
@@ -356,109 +359,143 @@
       <button type="button" id="deleteCancelBtn" class="btn">Cancel</button>
     </div>
   </div>
-
+<script src="${pageContext.request.contextPath}/assets/js/admin-dashboard.js"></script>
   <script>
-    const contextPath = '${pageContext.request.contextPath}';
+    document.addEventListener('DOMContentLoaded', function() {
+        const contextPath = '${pageContext.request.contextPath}';
+        const cabinModal = document.getElementById('cabinModal');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const addCabinBtn = document.getElementById('addCabinBtn');
+        const cabinForm = document.getElementById('cabinForm');
+        const formAction = document.getElementById('formAction');
+        const idInput = document.getElementById('cabinId');
+        const imageInput = document.getElementById('cabinImage');
+        const imagePreview = document.getElementById('imagePreview');
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteCloseBtn = document.getElementById('deleteCloseBtn');
+        const deleteCancelBtn = document.getElementById('deleteCancelBtn');
+        const deleteForm = document.getElementById('deleteForm');
+        const deleteIdInput = document.getElementById('deleteCabinId');
 
-    const cabinModal = document.getElementById('cabinModal');
-    const modalCloseBtn = document.getElementById('modalCloseBtn');
-    const addCabinBtn = document.getElementById('addCabinBtn');
-    const cabinForm = document.getElementById('cabinForm');
-    const formAction = document.getElementById('formAction');
-    const idInput = document.getElementById('cabinId');
-    const imageInput = document.getElementById('cabinImage');
-    const imagePreview = document.getElementById('imagePreview');
+        // Open add modal
+        addCabinBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            cabinForm.reset();
+            formAction.value = 'add';
+            idInput.value = '';
+            document.getElementById('modalTitle').textContent = 'Add New Cabin';
+            imagePreview.src = '';
+            imagePreview.style.display = 'none';
 
-    const deleteModal = document.getElementById('deleteModal');
-    const deleteCloseBtn = document.getElementById('deleteCloseBtn');
-    const deleteCancelBtn = document.getElementById('deleteCancelBtn');
-    const deleteForm = document.getElementById('deleteForm');
-    const deleteIdInput = document.getElementById('deleteCabinId');
+            // Reset checkboxes
+            document.getElementById('cabinAvailable').checked = true;
+            document.getElementById('cabinFeatured').checked = false;
 
-    // Open add modal
-    addCabinBtn.addEventListener('click', () => {
-      cabinForm.reset();
-      formAction.value = 'add';
-      idInput.value = '';
-      imagePreview.src = '';
-      imagePreview.style.display = 'none';
-      cabinModal.style.display = 'flex';
-    });
+            cabinModal.style.display = 'flex';
+        });
 
-    // Close modals
-    modalCloseBtn.addEventListener('click', () => cabinModal.style.display = 'none');
-    deleteCloseBtn.addEventListener('click', () => deleteModal.style.display = 'none');
-    deleteCancelBtn.addEventListener('click', () => deleteModal.style.display = 'none');
+        // Close modals
+        modalCloseBtn.addEventListener('click', () => cabinModal.style.display = 'none');
+        deleteCloseBtn.addEventListener('click', () => deleteModal.style.display = 'none');
+        deleteCancelBtn.addEventListener('click', () => deleteModal.style.display = 'none');
 
-    // Close modal on outside click
-    window.addEventListener('click', e => {
-      if (e.target === cabinModal) cabinModal.style.display = 'none';
-      if (e.target === deleteModal) deleteModal.style.display = 'none';
-    })
+        // Close modal on outside click
+        window.addEventListener('click', e => {
+            if (e.target === cabinModal) cabinModal.style.display = 'none';
+            if (e.target === deleteModal) deleteModal.style.display = 'none';
+        });
 
-    // Image preview
-    imageInput.addEventListener('change', function() {
-      const file = this.files[0];
-      if(file && file.type.startsWith('image/')) {
-        imagePreview.src = URL.createObjectURL(file);
-        imagePreview.style.display = 'block';
-      } else {
-        imagePreview.src = '';
-        imagePreview.style.display = 'none';
-      }
-    });
+        // Image preview
+        imageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if(file && file.type.startsWith('image/')) {
+                imagePreview.src = URL.createObjectURL(file);
+                imagePreview.style.display = 'block';
+            } else {
+                imagePreview.src = '';
+                imagePreview.style.display = 'none';
+            }
+        });
 
-    // Handle edit
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        formAction.value = 'edit';
-        idInput.value = btn.dataset.id;
+        // Handle edit
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                formAction.value = 'edit';
+                idInput.value = this.dataset.id;
+                document.getElementById('modalTitle').textContent = 'Edit Cabin';
 
-        document.getElementById('cabinName').value = btn.dataset.name || '';
-        document.getElementById('cabinDescription').value = btn.dataset.description || '';
-        document.getElementById('cabinLocation').value = btn.dataset.location || '';
-        document.getElementById('cabinPrice').value = btn.dataset.price || '';
-        document.getElementById('cabinMaxGuests').value = btn.dataset.maxguests || '';
-        document.getElementById('cabinBedrooms').value = btn.dataset.bedrooms || '';
-        document.getElementById('cabinBathrooms').value = btn.dataset.bathrooms || '';
-        document.getElementById('cabinAmenities').value = btn.dataset.amenities || '';
-        document.getElementById('cabinAvailable').checked = btn.dataset.isavailable === 'true';
-        document.getElementById('cabinFeatured').checked = btn.dataset.isfeatured === 'true';
+                // Populate form fields
+                document.getElementById('cabinName').value = this.dataset.name || '';
+                document.getElementById('cabinDescription').value = this.dataset.description || '';
+                document.getElementById('cabinLocation').value = this.dataset.location || '';
+                document.getElementById('cabinPrice').value = this.dataset.price || '';
+                document.getElementById('cabinMaxGuests').value = this.dataset.maxguests || '';
+                document.getElementById('cabinBedrooms').value = this.dataset.bedrooms || '';
+                document.getElementById('cabinBathrooms').value = this.dataset.bathrooms || '';
+                document.getElementById('cabinAmenities').value = this.dataset.amenities || '';
+                document.getElementById('cabinAvailable').checked = this.dataset.available === 'true';
+                document.getElementById('cabinFeatured').checked = this.dataset.featured === 'true';
 
-        if(btn.dataset.imageurl) {
-          imagePreview.src = contextPath + '/' + btn.dataset.imageurl;
-          imagePreview.style.display = 'block';
-        } else {
-          imagePreview.src = '';
-          imagePreview.style.display = 'none';
-        }
-        imageInput.value = '';
-        cabinModal.style.display = 'flex';
-      })
-    });
+                if(this.dataset.imageurl) {
+                    imagePreview.src = contextPath + '/' + this.dataset.imageurl;
+                    imagePreview.style.display = 'block';
+                } else {
+                    imagePreview.src = '';
+                    imagePreview.style.display = 'none';
+                }
+                cabinModal.style.display = 'flex';
+            });
+        });
 
-    // Handle delete
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        deleteIdInput.value = btn.dataset.id;
-        deleteModal.style.display = 'flex';
-      });
-    });
+        // Handle delete
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                deleteIdInput.value = this.dataset.id;
+                deleteModal.style.display = 'flex';
+            });
+        });
 
-    // Delete cancel button
-    deleteCancelBtn.addEventListener('click', () => deleteModal.style.display = 'none');
+        // Form validation
+        cabinForm.addEventListener('submit', function(e) {
+            let isValid = true;
+            const fields = [
+                'cabinName', 'cabinDescription', 'cabinLocation',
+                'cabinPrice', 'cabinMaxGuests', 'cabinBedrooms',
+                'cabinBathrooms', 'cabinAmenities'
+            ];
 
-    // Basic validation
-    cabinForm.addEventListener('submit', e => {
-      const name = document.getElementById('cabinName').value.trim();
-      const desc = document.getElementById('cabinDescription').value.trim();
-      const loc = document.getElementById('cabinLocation').value.trim();
-      const price = parseFloat(document.getElementById('cabinPrice').value);
+            // Reset error states
+            fields.forEach(field => {
+                document.getElementById(field).classList.remove('error-input');
+            });
 
-      if(!name || !desc || !loc || isNaN(price) || price < 100) {
-        alert('Please fill all required fields correctly.');
-        e.preventDefault();
-      }
+            // Validate each field
+            fields.forEach(field => {
+                const el = document.getElementById(field);
+                if (!el.value || !el.value.trim()) {
+                    el.classList.add('error-input');
+                    isValid = false;
+                }
+            });
+
+            // Validate price
+            const priceEl = document.getElementById('cabinPrice');
+            const price = parseFloat(priceEl.value);
+            if (isNaN(price) || price < 100) {
+                priceEl.classList.add('error-input');
+                isValid = false;
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill all required fields correctly. Price must be at least 100.');
+            }
+        });
+
+        // Auto-open modal if error exists
+        <c:if test="${not empty error}">
+            document.getElementById('addCabinBtn').click();
+        </c:if>
     });
   </script>
 </body>

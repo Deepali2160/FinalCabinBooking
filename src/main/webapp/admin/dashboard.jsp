@@ -1,4 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,13 +10,89 @@
     <title>Cabinest - Admin Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css">
+    <style>
+        /* Additional styles for dynamic content */
+        .recent-cabins {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .cabin-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background: white;
+        }
+
+        .cabin-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .cabin-image img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .cabin-details {
+            padding: 15px;
+        }
+
+        .cabin-details h4 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .cabin-meta {
+            display: flex;
+            gap: 15px;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .cabin-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .cabin-footer > div:first-child {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--primary);
+            font-size: 1rem;
+            margin-left: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="container">
-            <a href="#" class="logo">
+            <a href="${pageContext.request.contextPath}/admin/dashboard" class="logo">
                 <i class="fas fa-tree"></i>
                 <span>Cabinest</span>
             </a>
@@ -43,8 +122,8 @@
                 <p>Manage your cabin bookings</p>
             </div>
             <ul class="sidebar-menu">
-                <li><a href="#" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="cabin.jsp"><i class="fas fa-home"></i> Cabins</a></li>
+                <li><a href="${pageContext.request.contextPath}/admin/dashboard" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="${pageContext.request.contextPath}/admin/cabin"><i class="fas fa-home"></i> Cabins</a></li>
                 <li><a href="#"><i class="fas fa-calendar-check"></i> Bookings</a></li>
                 <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
                 <li><a href="#"><i class="fas fa-chart-line"></i> Reports</a></li>
@@ -57,7 +136,7 @@
         <main class="main-content">
             <div class="dashboard-header">
                 <h1 class="dashboard-title">Admin Dashboard</h1>
-                <button class="btn primary">Add New Cabin</button>
+                <a href="${pageContext.request.contextPath}/admin/cabin" class="btn primary">Add New Cabin</a>
             </div>
 
             <!-- Stats Cards -->
@@ -65,7 +144,7 @@
                 <div class="stat-card">
                     <i class="fas fa-home"></i>
                     <h3>Total Cabins</h3>
-                    <div class="value">42</div>
+                    <div class="value">${not empty totalCabins ? totalCabins : '0'}</div>
                     <div class="change up"><i class="fas fa-arrow-up"></i> 12% from last month</div>
                 </div>
                 <div class="stat-card">
@@ -131,103 +210,79 @@
                                 <button class="action-btn" title="Edit"><i class="fas fa-edit"></i></button>
                             </td>
                         </tr>
-                        <tr>
-                            <td>#CB-1254</td>
-                            <td>Forest Haven</td>
-                            <td>mike.johnson@example.com</td>
-                            <td>Jul 20 - Jul 25, 2023</td>
-                            <td>$1,995</td>
-                            <td><span class="status confirmed">Confirmed</span></td>
-                            <td>
-                                <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
-                                <button class="action-btn" title="Edit"><i class="fas fa-edit"></i></button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#CB-1253</td>
-                            <td>Mountain View Lodge</td>
-                            <td>emily.wilson@example.com</td>
-                            <td>Jul 22 - Jul 27, 2023</td>
-                            <td>$1,445</td>
-                            <td><span class="status cancelled">Cancelled</span></td>
-                            <td>
-                                <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
-                                <button class="action-btn" title="Edit"><i class="fas fa-edit"></i></button>
-                            </td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
 
             <!-- Recent Cabins -->
+
             <div class="recent-bookings">
                 <div class="section-header">
                     <h2 class="section-title">Recently Added Cabins</h2>
-                    <a href="#" class="btn primary">View All</a>
+                    <a href="${pageContext.request.contextPath}/admin/cabin" class="btn primary">View All</a>
                 </div>
                 <div class="recent-cabins">
-                    <div class="cabin-item">
-                        <div class="cabin-image">
-                            <img src="https://images.unsplash.com/photo-1580048915913-4f8f5cb481c2?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=800" alt="Mountain View Cabin">
-                        </div>
-                        <div class="cabin-details">
-                            <h4>Mountain View Lodge</h4>
-                            <div class="cabin-meta">
-                                <span><i class="fas fa-user-friends"></i> 6 Guests</span>
-                                <span><i class="fas fa-bed"></i> 3 Bedrooms</span>
+                    <c:choose>
+                        <c:when test="${not empty recentCabins}">
+                            <c:forEach var="cabin" items="${recentCabins}">
+                                <div class="cabin-item">
+                                    <div class="cabin-image">
+                                        <img src="${pageContext.request.contextPath}/${cabin.imageUrl}" alt="${cabin.name}">
+                                    </div>
+                                    <div class="cabin-details">
+                                        <h4>${cabin.name}</h4>
+                                        <div class="cabin-meta">
+                                            <span><i class="fas fa-user-friends"></i> ${cabin.maxGuests} Guests</span>
+                                            <span><i class="fas fa-bed"></i> ${cabin.bedrooms} Bedrooms</span>
+                                            <span><i class="fas fa-shower"></i> ${cabin.bathrooms} Baths</span>
+                                        </div>
+                                        <div class="status ${cabin.available ? 'available' : 'unavailable'}">
+                                            ${cabin.available ? 'Available' : 'Not Available'}
+                                        </div>
+                                    </div>
+                                    <div class="cabin-footer">
+                                        <div>₹${cabin.pricePerNight} /night</div>
+                                        <div>
+                                            <a href="${pageContext.request.contextPath}/admin/cabin?action=edit&id=${cabin.id}"
+                                               class="action-btn" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="${pageContext.request.contextPath}/admin/cabin?action=delete&id=${cabin.id}"
+                                               class="action-btn" title="Delete"
+                                               onclick="return confirm('Are you sure you want to delete this cabin?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </c:when>
+                        <c:otherwise>
+                            <div class="empty-state">
+                                <i class="fas fa-home" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                                <p>No cabins available</p>
+                                <a href="${pageContext.request.contextPath}/admin/cabin" class="btn primary">Add Your First Cabin</a>
                             </div>
-                        </div>
-                        <div class="cabin-footer">
-                            <div>$289 /night</div>
-                            <div>
-                                <button class="action-btn" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn" title="Delete"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cabin-item">
-                        <div class="cabin-image">
-                            <img src="https://images.unsplash.com/photo-1591825729269-caeb344f6df2?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=800" alt="Lakeside Retreat">
-                        </div>
-                        <div class="cabin-details">
-                            <h4>Lakeside Retreat</h4>
-                            <div class="cabin-meta">
-                                <span><i class="fas fa-user-friends"></i> 4 Guests</span>
-                                <span><i class="fas fa-bed"></i> 2 Bedrooms</span>
-                            </div>
-                        </div>
-                        <div class="cabin-footer">
-                            <div>$329 /night</div>
-                            <div>
-                                <button class="action-btn" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn" title="Delete"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cabin-item">
-                        <div class="cabin-image">
-                            <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=800" alt="Forest Haven">
-                        </div>
-                        <div class="cabin-details">
-                            <h4>Forest Haven</h4>
-                            <div class="cabin-meta">
-                                <span><i class="fas fa-user-friends"></i> 8 Guests</span>
-                                <span><i class="fas fa-bed"></i> 4 Bedrooms</span>
-                            </div>
-                        </div>
-                        <div class="cabin-footer">
-                            <div>$399 /night</div>
-                            <div>
-                                <button class="action-btn" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn" title="Delete"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
             </div>
         </main>
     </div>
-    <script src="../assets/js/admin-dashboard.js"></script>
 
+    <script src="${pageContext.request.contextPath}/assets/js/admin-dashboard.js"></script>
+    <script>
+        // Confirm before deleting
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButtons = document.querySelectorAll('.action-btn .fa-trash');
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    if (!confirm('Are you sure you want to delete this cabin?')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
