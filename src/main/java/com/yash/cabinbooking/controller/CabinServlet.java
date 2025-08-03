@@ -5,7 +5,7 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import com.yash.cabinbooking.model.Cabin;
 import com.yash.cabinbooking.service.CabinService;
-import com.yash.cabinbooking.service.impl.CabinServiceImpl;
+import com.yash.cabinbooking.serviceimpl.CabinServiceImpl;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -49,6 +49,10 @@ public class CabinServlet extends HttpServlet {
                     break;
                 case "toggleFeatured":
                     toggleFeatured(request, response);
+                    break;
+                // Add to doGet method
+                case "viewDetails":
+                    showCabinDetails(request, response);
                     break;
                 default:
                     listCabins(request, response);
@@ -348,5 +352,30 @@ public class CabinServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setAttribute("error", errorMessage);
         listCabins(request, response);
+    }
+    // Add new method
+    private void showCabinDetails(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            int id = Integer.parseInt(request.getParameter("id"));
+            Cabin cabin = cabinService.getCabinById(id);
+            if (cabin != null) {
+                // Load additional images
+                List<String> images = cabinService.getCabinImages(id);
+                if (!images.isEmpty()) {
+                    cabin.setImageUrls(images);
+                }
+                request.setAttribute("cabin", cabin);
+                request.getRequestDispatcher("/admin/cabin-details.jsp").forward(request, response);
+            } else {
+                request.setAttribute("error", "Cabin not found");
+                listCabins(request, response);
+            }
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Invalid cabin ID");
+            listCabins(request, response);
+        } catch (Exception e) {
+            handleError(request, response, "Error loading cabin details: " + e.getMessage());
+        }
     }
 }

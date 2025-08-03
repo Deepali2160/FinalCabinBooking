@@ -1,113 +1,182 @@
 package com.yash.cabinbooking.util;
 
+import org.apache.commons.dbcp2.BasicDataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Objects;
 
-public class DBConnection {
-    private static final String URL = "jdbc:mysql://localhost:3306/cabinbooking";
-    private static final String USER = "root";
-    private static final String PASSWORD = "root";
-
-    private static Connection connection;
+public final class DBConnection {
+    private static volatile BasicDataSource dataSource;
+    private static final Object lock = new Object();
 
     // Private constructor to prevent instantiation
-    private DBConnection() {}
+    private DBConnection() {
+        throw new AssertionError("Cannot instantiate utility class");
+    }
 
-    public static synchronized Connection getConnection() {
+    /**
+     * Initializes the connection pool if not already initialized
+     */
+    private static void initializePool() {
+        if (dataSource == null) {
+            synchronized (lock) {
+                if (dataSource == null) {
+                    try {
+                        BasicDataSource ds = new BasicDataSource();
+                        ds.setUrl("jdbc:mysql://localhost:3306/cabinbooking?useSSL=false");
+                        ds.setUsername("root");
+                        ds.setPassword("root");
 
-        try {
-            if (connection == null || connection.isClosed()) {
-                try {
-                    // Load MySQL JDBC Driver
-                    Class.forName("com.mysql.cj.jdbc.Driver");
+                        // Connection pool configuration
+                        ds.setMinIdle(5);
+                        ds.setMaxIdle(20);
+                        ds.setMaxTotal(100);
+                        ds.setMaxWaitMillis(10000); // 10 seconds
 
-                    // Create connection
-                    connection = DriverManager.getConnection(URL, USER, PASSWORD);
+                        // Connection validation
+                        ds.setValidationQuery("SELECT 1");
+                        ds.setTestOnBorrow(true);
+                        ds.setTestWhileIdle(true);
+                        ds.setTimeBetweenEvictionRunsMillis(30000);
 
-                    // Disable auto-commit to enable transactions
-                    connection.setAutoCommit(false);
+                        // Connection timeouts
+                        ds.setRemoveAbandonedTimeout(60); // 60 seconds
+                        ds.setRemoveAbandonedOnBorrow(true);
+                        ds.setRemoveAbandonedOnMaintenance(true);
 
-                    System.out.println("Database connection established successfully");
-                } catch (ClassNotFoundException e) {
-                    System.err.println("MySQL JDBC Driver not found!");
-                    e.printStackTrace();
-                    throw new RuntimeException("Database driver not found", e);
-                } catch (SQLException e) {
-                    System.err.println("Failed to create database connection!");
-                    e.printStackTrace();
-                    throw new RuntimeException("Failed to connect to database", e);
+                        // MySQL-specific optimizations
+                        ds.setDriverClassName("com.mysql.cj.jdbc.Driver");
+                        ds.addConnectionProperty("useUnicode", "true");
+                        ds.addConnectionProperty("characterEncoding", "UTF-8");
+                        ds.addConnectionProperty("serverTimezone", "UTC");
+
+                        dataSource = ds;
+                        System.out.println("Database connection pool initialized successfully");
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to initialize connection pool", e);
+                    }
                 }
             }
-        } catch (SQLException e) {
-            System.err.println("Error checking connection status");
-            e.printStackTrace();
-            throw new RuntimeException("Error checking database connection", e);
-        }
-        return connection;
-
-    }
-
-    public static synchronized void commitConnection() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.commit();
-                System.out.println("Transaction committed successfully");
-            }
-        } catch (SQLException e) {
-            System.err.println("Error committing transaction");
-            e.printStackTrace();
-            throw new RuntimeException("Failed to commit transaction", e);
         }
     }
 
-    public static synchronized void rollbackConnection() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.rollback();
-                System.out.println("Transaction rolled back");
-            }
-        } catch (SQLException e) {
-            System.err.println("Error rolling back transaction");
-            e.printStackTrace();
-            throw new RuntimeException("Failed to rollback transaction", e);
+    /**
+     * Gets a database connection from the pool
+     * @return Connection object
+     * @throws SQLException if connection fails
+     */
+    public static Connection getConnection() throws SQLException {
+        if (dataSource == null) {
+            initializePool();
         }
+        Connection conn = dataSource.getConnection();
+        conn.setAutoCommit(false); // Enable transaction management
+        return conn;
     }
 
-    public static synchronized void closeConnection() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                // Commit any pending transactions before closing
-                connection.commit();
-                connection.close();
-                System.out.println("Database connection closed successfully");
-            }
-        } catch (SQLException e) {
-            System.err.println("Error closing database connection");
-            e.printStackTrace();
+    /**
+     * Commits the transaction and closes the connection
+     * @param conn Connection to commit and close
+     */
+    public static void commitAndClose(Connection conn) {
+        if (conn != null) {
             try {
-                // Try to rollback if there was an error during close
-                if (connection != null && !connection.isClosed()) {
-                    connection.rollback();
+                if (!conn.isClosed()) {
+                    conn.commit();
                 }
-            } catch (SQLException ex) {
-                System.err.println("Error during rollback on close");
-                ex.printStackTrace();
+            } catch (SQLException e) {
+                System.err.println("Error committing transaction");
+                e.printStackTrace();
+                rollbackAndClose(conn);
+                throw new RuntimeException("Commit failed", e);
+            } finally {
+                closeQuietly(conn);
             }
-            throw new RuntimeException("Failed to close database connection", e);
-        } finally {
-            connection = null; // Ensure connection is dereferenced
         }
     }
 
-    // Additional helper method for testing connection
+    /**
+     * Rolls back the transaction and closes the connection
+     * @param conn Connection to rollback and close
+     */
+    public static void rollbackAndClose(Connection conn) {
+        if (conn != null) {
+            try {
+                if (!conn.isClosed()) {
+                    conn.rollback();
+                }
+            } catch (SQLException e) {
+                System.err.println("Error rolling back transaction");
+                e.printStackTrace();
+            } finally {
+                closeQuietly(conn);
+            }
+        }
+    }
+
+    /**
+     * Closes the connection quietly without throwing exceptions
+     * @param conn Connection to close
+     */
+    public static void closeQuietly(Connection conn) {
+        if (conn != null) {
+            try {
+                if (!conn.isClosed()) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                System.err.println("Error closing connection");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Closes the connection pool and releases all resources
+     */
+    public static void shutdown() {
+        if (dataSource != null) {
+            try {
+                dataSource.close();
+                System.out.println("Database connection pool shutdown successfully");
+            } catch (SQLException e) {
+                System.err.println("Error shutting down connection pool");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Tests if the connection pool is working
+     * @return true if connection test succeeds
+     */
     public static boolean testConnection() {
-        try (Connection testConn = DriverManager.getConnection(URL, USER, PASSWORD)) {
-            return testConn.isValid(2); // 2 second timeout
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            return conn.isValid(2); // 2 second timeout
         } catch (SQLException e) {
             System.err.println("Connection test failed");
             e.printStackTrace();
             return false;
+        } finally {
+            closeQuietly(conn);
         }
+    }
+
+    /**
+     * Gets connection pool statistics
+     * @return String containing pool statistics
+     */
+    public static String getPoolStats() {
+        if (dataSource == null) {
+            return "Connection pool not initialized";
+        }
+        return String.format(
+                "Active: %d, Idle: %d, Total: %d",
+                dataSource.getNumActive(),
+                dataSource.getNumIdle(),
+                dataSource.getMaxTotal()
+        );
     }
 }

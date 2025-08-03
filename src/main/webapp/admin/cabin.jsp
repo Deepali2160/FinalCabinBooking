@@ -104,7 +104,7 @@
       border: 1px solid #c0392b;
     }
 
-    /* Additional styles for layout */
+    /* Cabin item styles */
     .cabin-item {
       border: 1px solid #ddd;
       border-radius: 10px;
@@ -114,6 +114,12 @@
       gap: 20px;
       background: var(--light);
       box-shadow: var(--box-shadow);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cabin-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     .cabin-image img {
       width: 140px;
@@ -160,6 +166,86 @@
     .error-input {
       border-color: #e74c3c !important;
     }
+
+    /* Detailed View Modal */
+    #detailModal {
+      z-index: 10001;
+    }
+    .detail-modal-content {
+      max-width: 900px;
+      width: 90%;
+      padding: 30px;
+    }
+    .cabin-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .cabin-gallery img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .cabin-gallery img:hover {
+      transform: scale(1.03);
+    }
+    .cabin-info {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 30px;
+    }
+    .cabin-highlights {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .amenities-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .amenity-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    #cabinMap {
+      height: 300px;
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 20px;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+    }
+    .more-content {
+      display: none;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+    .toggle-more {
+      background: none;
+      border: none;
+      color: var(--primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+    .cabin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
@@ -194,8 +280,8 @@
         <li><a href="#"><i class="fas fa-calendar-check"></i> Bookings</a></li>
         <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
         <li><a href="#"><i class="fas fa-chart-line"></i> Reports</a></li>
-        <li><a href="#"><i class="fas fa-cog"></i>Settings</a></li>
-        <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        <li><a href="${pageContext.request.contextPath}/admin/settings"><i class="fas fa-cog"></i>Settings</a></li>
+        <li><a href="${pageContext.request.contextPath}/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
       </ul>
     </aside>
 
@@ -216,7 +302,7 @@
         <c:choose>
           <c:when test="${not empty cabinsList}">
             <c:forEach var="cabin" items="${cabinsList}">
-              <div class="cabin-item">
+              <div class="cabin-item" onclick="showCabinDetails(${cabin.id})">
                 <div class="cabin-image">
                   <img src="${pageContext.request.contextPath}/${cabin.imageUrl}" alt="${fn:escapeXml(cabin.name)}" loading="lazy"/>
                 </div>
@@ -228,7 +314,7 @@
                     <span><i class="fas fa-shower"></i> ${cabin.bathrooms} Baths</span>
                   </div>
                   <p>${fn:escapeXml(cabin.amenities)}</p>
-                 <div class="status" style="${cabin.available ? 'background:#e2f0d9;color:#27ae60;' : 'background:#f7d6d8;color:#e74c3c;'}">
+                  <div class="status" style="${cabin.available ? 'background:#e2f0d9;color:#27ae60;' : 'background:#f7d6d8;color:#e74c3c;'}">
                     ${cabin.available ? 'Available' : 'Not Available'}
                     <c:if test="${cabin.featured}">
                       <span style="margin-left: 10px; color: #f1c40f;"><i class="fas fa-star"></i> Featured</span>
@@ -250,15 +336,18 @@
                       data-amenities="${fn:escapeXml(cabin.amenities)}"
                       data-imageurl="${cabin.imageUrl}"
                       data-available="${cabin.available}"
-                      data-featured="${cabin.featured}">
+                      data-featured="${cabin.featured}"
+                      onclick="event.stopPropagation()">
                       <i class="fas fa-edit"></i>
                     </button>
-                    <button type="button" class="action-btn delete-btn" title="Delete" data-id="${cabin.id}">
+                    <button type="button" class="action-btn delete-btn" title="Delete" data-id="${cabin.id}"
+                      onclick="event.stopPropagation()">
                       <i class="fas fa-trash"></i>
                     </button>
                   </div>
                   <div style="display:flex;gap:8px; margin-top: 10px;">
-                    <form action="${pageContext.request.contextPath}/admin/cabin" method="post" style="display:inline">
+                    <form action="${pageContext.request.contextPath}/admin/cabin" method="post" style="display:inline"
+                      onclick="event.stopPropagation()">
                       <input type="hidden" name="action" value="toggleAvailability"/>
                       <input type="hidden" name="id" value="${cabin.id}"/>
                       <input type="hidden" name="available" value="${!cabin.available}"/>
@@ -267,7 +356,8 @@
                         <span class="slider round"></span>
                       </label>
                     </form>
-                    <form action="${pageContext.request.contextPath}/admin/cabin" method="post" style="display:inline">
+                    <form action="${pageContext.request.contextPath}/admin/cabin" method="post" style="display:inline"
+                      onclick="event.stopPropagation()">
                       <input type="hidden" name="action" value="toggleFeatured"/>
                       <input type="hidden" name="id" value="${cabin.id}"/>
                       <input type="hidden" name="featured" value="${!cabin.featured}"/>
@@ -307,6 +397,12 @@
         <label for="cabinLocation">Location</label>
         <input type="text" id="cabinLocation" name="location" required placeholder="Location" />
 
+        <label for="latitude">Latitude</label>
+        <input type="text" id="latitude" name="latitude" placeholder="e.g., 30.123456" />
+
+        <label for="longitude">Longitude</label>
+        <input type="text" id="longitude" name="longitude" placeholder="e.g., 78.123456" />
+
         <div style="display:flex; gap:10px;">
           <div style="flex:1;">
             <label for="cabinPrice">Price per Night</label>
@@ -332,9 +428,12 @@
         <label for="cabinAmenities" style="margin-top:10px;">Amenities (comma separated)</label>
         <input type="text" id="cabinAmenities" name="amenities" required placeholder="Wifi, Parking, Fireplace" />
 
-        <label for="cabinImage" style="margin-top:10px;">Image (JPG/PNG max 5MB)</label>
+        <label for="cabinImage" style="margin-top:10px;">Primary Image (JPG/PNG max 5MB)</label>
         <input type="file" id="cabinImage" name="image" accept="image/*" />
         <img id="imagePreview" alt="Image Preview" />
+
+        <label for="additionalImages" style="margin-top:10px;">Additional Images (Multiple select)</label>
+        <input type="file" id="additionalImages" name="additionalImages" accept="image/*" multiple />
 
         <div style="margin-top:15px;">
           <label><input type="checkbox" id="cabinAvailable" name="isAvailable" value="true" checked /> Available</label>
@@ -359,8 +458,20 @@
       <button type="button" id="deleteCancelBtn" class="btn">Cancel</button>
     </div>
   </div>
+
+  <!-- Detailed View Modal -->
+  <div id="detailModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-content detail-modal-content" role="document">
+      <span id="detailCloseBtn" class="close" title="Close">&times;</span>
+      <div id="detailContent">
+        <!-- Content will be loaded via AJAX -->
+      </div>
+    </div>
+  </div>
+
 <script src="${pageContext.request.contextPath}/assets/js/admin-dashboard.js"></script>
-  <script>
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_ACTUAL_API_KEY&callback=initMap" async defer></script>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
         const contextPath = '${pageContext.request.contextPath}';
         const cabinModal = document.getElementById('cabinModal');
@@ -376,6 +487,8 @@
         const deleteCancelBtn = document.getElementById('deleteCancelBtn');
         const deleteForm = document.getElementById('deleteForm');
         const deleteIdInput = document.getElementById('deleteCabinId');
+        const detailModal = document.getElementById('detailModal');
+        const detailCloseBtn = document.getElementById('detailCloseBtn');
 
         // Open add modal
         addCabinBtn.addEventListener('click', function(e) {
@@ -398,11 +511,13 @@
         modalCloseBtn.addEventListener('click', () => cabinModal.style.display = 'none');
         deleteCloseBtn.addEventListener('click', () => deleteModal.style.display = 'none');
         deleteCancelBtn.addEventListener('click', () => deleteModal.style.display = 'none');
+        detailCloseBtn.addEventListener('click', () => detailModal.style.display = 'none');
 
         // Close modal on outside click
         window.addEventListener('click', e => {
             if (e.target === cabinModal) cabinModal.style.display = 'none';
             if (e.target === deleteModal) deleteModal.style.display = 'none';
+            if (e.target === detailModal) detailModal.style.display = 'none';
         });
 
         // Image preview
@@ -497,6 +612,66 @@
             document.getElementById('addCabinBtn').click();
         </c:if>
     });
-  </script>
+
+    // Show cabin details
+    function showCabinDetails(cabinId) {
+        fetch('${pageContext.request.contextPath}/admin/cabin?action=viewDetails&id=' + cabinId)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(html => {
+                document.getElementById('detailContent').innerHTML = html;
+                document.getElementById('detailModal').style.display = 'flex';
+
+                // Initialize map if coordinates exist
+                const latEl = document.getElementById('mapLatitude');
+                const lngEl = document.getElementById('mapLongitude');
+
+                if (latEl && lngEl) {
+                    const lat = parseFloat(latEl.value);
+                    const lng = parseFloat(lngEl.value);
+
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        const cabinLocation = { lat: lat, lng: lng };
+                        const map = new google.maps.Map(document.getElementById("cabinMap"), {
+                            zoom: 15,
+                            center: cabinLocation,
+                            mapTypeId: 'hybrid'
+                        });
+
+                        new google.maps.Marker({
+                            position: cabinLocation,
+                            map: map,
+                            title: document.getElementById('cabinTitle')?.value || 'Cabin Location',
+                            icon: {
+                                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                            }
+                        });
+                    }
+                }
+
+                // Toggle more content
+                document.querySelectorAll('.toggle-more').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const moreContent = this.nextElementSibling;
+                        const isHidden = moreContent.style.display === 'none';
+
+                        moreContent.style.display = isHidden ? 'block' : 'none';
+                        this.querySelector('i').className = isHidden ?
+                            'fas fa-chevron-up' : 'fas fa-chevron-down';
+                        this.querySelector('span').textContent = isHidden ?
+                            'Show less' : 'Show more';
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Error loading cabin details:', error);
+                alert('Error loading cabin details. Please try again.');
+            });
+    }
+</script>
 </body>
 </html>

@@ -127,8 +127,8 @@
                 <li><a href="#"><i class="fas fa-calendar-check"></i> Bookings</a></li>
                 <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
                 <li><a href="#"><i class="fas fa-chart-line"></i> Reports</a></li>
-                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
-                <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li><a href="${pageContext.request.contextPath}/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="${pageContext.request.contextPath}/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </aside>
 

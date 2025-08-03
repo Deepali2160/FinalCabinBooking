@@ -1,6 +1,7 @@
 package com.yash.cabinbooking.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class Cabin {
     private int id;
@@ -17,7 +18,9 @@ public class Cabin {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isFeatured;
-
+    private List<String> imageUrls;
+    private double latitude;
+    private double longitude;
     // Constructors, getters, and setters
     public Cabin() {}
 
@@ -160,7 +163,29 @@ public class Cabin {
     public void setFeatured(boolean featured) {
         isFeatured = featured;
     }
+    // Add getter and setter for multiple images
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
 
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
+    }
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
 
 }
 
