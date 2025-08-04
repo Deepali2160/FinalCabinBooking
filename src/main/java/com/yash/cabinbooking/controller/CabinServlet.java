@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.ArrayList;
 
 @WebServlet("/admin/cabin")
 public class CabinServlet extends HttpServlet {
@@ -107,9 +108,9 @@ public class CabinServlet extends HttpServlet {
         ServletFileUpload upload = new ServletFileUpload(factory);
         Cabin cabin = new Cabin();
         boolean isEdit = false;
+        List<FileItem> additionalImages = new ArrayList<>();
 
         try {
-            // Create upload directory if it doesn't exist
             String uploadPath = getServletContext().getRealPath("/images");
             File uploadDir = new File(uploadPath);
             if (!uploadDir.exists()) uploadDir.mkdir();
@@ -124,14 +125,17 @@ public class CabinServlet extends HttpServlet {
                         isEdit = true;
                     }
                 } else {
-                    // Process file upload
-                    if (!item.getName().isEmpty()) {
-                        // Generate unique filename to prevent conflicts
+                    if ("additionalImages".equals(item.getFieldName())) {
+                        // Store additional images for processing later
+                        if (!item.getName().isEmpty()) {
+                            additionalImages.add(item);
+                        }
+                    } else if (!item.getName().isEmpty()) {
+                        // Process primary image
                         fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
                                 + "_" + new File(item.getName()).getName();
                         String filePath = uploadPath + File.separator + fileName;
 
-                        // Delete old image if exists during edit
                         if (isEdit) {
                             Cabin existingCabin = cabinService.getCabinById(cabin.getId());
                             if (existingCabin != null && existingCabin.getImageUrl() != null) {
@@ -144,7 +148,6 @@ public class CabinServlet extends HttpServlet {
                         item.write(new File(filePath));
                         cabin.setImageUrl("images/" + fileName);
                     } else if (isEdit) {
-                        // Keep existing image if no new file was uploaded
                         Cabin existingCabin = cabinService.getCabinById(cabin.getId());
                         if (existingCabin != null) {
                             cabin.setImageUrl(existingCabin.getImageUrl());
@@ -153,6 +156,7 @@ public class CabinServlet extends HttpServlet {
                 }
             }
 
+            // Validate and save cabin first
             String error = validateCabin(cabin);
             if (error != null) {
                 request.setAttribute("error", error);
@@ -172,6 +176,18 @@ public class CabinServlet extends HttpServlet {
                 cabinService.addCabin(cabin);
                 request.setAttribute("message", "Cabin added successfully!");
             }
+
+            // Process additional images after cabin is saved
+            if (!additionalImages.isEmpty()) {
+                for (FileItem imageItem : additionalImages) {
+                    String imageName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                            + "_" + new File(imageItem.getName()).getName();
+                    String imagePath = uploadPath + File.separator + imageName;
+                    imageItem.write(new File(imagePath));
+                    cabinService.addCabinImage(cabin.getId(), "images/" + imageName);
+                }
+            }
+
         } catch (Exception e) {
             handleError(request, response, "Error processing request: " + e.getMessage());
             return;

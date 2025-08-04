@@ -17,4 +17,7 @@ public interface CabinService {
 
     // Optional: Add method to get cabin with all images
     Cabin getCabinWithImages(int id);
+
+    List<Cabin> getAvailableCabins();  // 👈 user ke liye method
+
 }

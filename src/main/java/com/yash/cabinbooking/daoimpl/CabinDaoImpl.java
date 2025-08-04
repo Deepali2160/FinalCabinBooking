@@ -348,4 +348,30 @@ public class CabinDaoImpl implements CabinDao {
             return false;
         }
     }
+    @Override
+    public List<Cabin> getAvailableCabins() {
+        List<Cabin> cabins = new ArrayList<>();
+        String sql = "SELECT * FROM cabins WHERE is_available = true ORDER BY created_at DESC";
+
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+                    Cabin cabin = mapCabin(rs);
+                    cabins.add(cabin);
+                }
+
+                DBConnection.commitAndClose(conn);
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error getting available cabins", e);
+            DBConnection.rollbackAndClose(conn);
+        }
+
+        return cabins;
+    }
+
 }

@@ -32,60 +32,54 @@
         </div>
     </div>
 
-<!-- Image Gallery -->
-<div class="image-gallery">
-    <div class="main-image">
-        <c:choose>
-            <c:when test="${not empty cabin.imageUrls}">
-                <img src="${pageContext.request.contextPath}${cabin.imageUrls[0].startsWith('/') ? '' : '/'}${cabin.imageUrls[0]}"
-                     alt="Main image of ${cabin.name}"
-                     id="mainCabinImage"
-                     onerror="handleImageError(this)">
-            </c:when>
-            <c:when test="${not empty cabin.imageUrl}">
-                <img src="${pageContext.request.contextPath}${cabin.imageUrl.startsWith('/') ? '' : '/'}${cabin.imageUrl}"
-                     alt="Main image of ${cabin.name}"
-                     id="mainCabinImage"
-                     onerror="handleImageError(this)">
-            </c:when>
-            <c:otherwise>
-                <img src="${pageContext.request.contextPath}/images/default-cabin.jpg"
-                     alt="Default cabin image"
-                     id="mainCabinImage">
-            </c:otherwise>
-        </c:choose>
-    </div>
-
-    <div class="thumbnail-container">
-        <c:choose>
-            <c:when test="${not empty cabin.imageUrls}">
-                <c:forEach items="${cabin.imageUrls}" var="image" varStatus="loop">
-                    <div class="thumbnail ${loop.index == 0 ? 'active' : ''}">
-                        <img src="${pageContext.request.contextPath}${image.startsWith('/') ? '' : '/'}${image}"
-                             alt="Cabin image ${loop.index + 1}"
-                             onclick="changeMainImage(this)"
-                             onerror="handleImageError(this)">
-                    </div>
-                </c:forEach>
-            </c:when>
-            <c:when test="${not empty cabin.imageUrl}">
-                <div class="thumbnail active">
+    <!-- Image Gallery -->
+    <div class="image-gallery">
+        <div class="main-image">
+            <c:choose>
+                <c:when test="${not empty cabin.imageUrls}">
+                    <img src="${pageContext.request.contextPath}${cabin.imageUrls[0].startsWith('/') ? '' : '/'}${cabin.imageUrls[0]}"
+                         alt="Main image of ${cabin.name}"
+                         id="mainCabinImage">
+                </c:when>
+                <c:when test="${not empty cabin.imageUrl}">
                     <img src="${pageContext.request.contextPath}${cabin.imageUrl.startsWith('/') ? '' : '/'}${cabin.imageUrl}"
-                         alt="Single image"
-                         onclick="changeMainImage(this)"
-                         onerror="handleImageError(this)">
-                </div>
-            </c:when>
-            <c:otherwise>
-                <div class="thumbnail active">
+                         alt="Main image of ${cabin.name}"
+                         id="mainCabinImage">
+                </c:when>
+                <c:otherwise>
                     <img src="${pageContext.request.contextPath}/images/default-cabin.jpg"
-                         alt="Default thumbnail"
-                         onclick="changeMainImage(this)">
-                </div>
-            </c:otherwise>
-        </c:choose>
+                         alt="Default cabin image"
+                         id="mainCabinImage">
+                </c:otherwise>
+            </c:choose>
+        </div>
+
+        <div class="thumbnail-container">
+            <c:choose>
+                <c:when test="${not empty cabin.imageUrls}">
+                    <c:forEach items="${cabin.imageUrls}" var="image" varStatus="loop">
+                        <div class="thumbnail ${loop.index == 0 ? 'active' : ''}">
+                            <img src="${pageContext.request.contextPath}${image.startsWith('/') ? '' : '/'}${image}"
+                                 alt="Cabin image ${loop.index + 1}"
+                                 data-index="${loop.index}">
+                        </div>
+                    </c:forEach>
+                </c:when>
+                <c:when test="${not empty cabin.imageUrl}">
+                    <div class="thumbnail active">
+                        <img src="${pageContext.request.contextPath}${cabin.imageUrl.startsWith('/') ? '' : '/'}${cabin.imageUrl}"
+                             alt="Single image">
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <div class="thumbnail active">
+                        <img src="${pageContext.request.contextPath}/images/default-cabin.jpg"
+                             alt="Default thumbnail">
+                    </div>
+                </c:otherwise>
+            </c:choose>
+        </div>
     </div>
-</div>
 
     <!-- Details Section -->
     <div class="details-section">
@@ -153,7 +147,7 @@
             <div id="cabinMapContainer" class="map-container">
                 <div id="cabinMap"></div>
                 <div class="map-overlay" id="mapOverlay">
-                    <button class="btn primary" onclick="initMap(true)">
+                    <button class="btn primary" id="showMapBtn">
                         <i class="fas fa-map-marked-alt"></i> Show Map
                     </button>
                 </div>
@@ -263,6 +257,7 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: opacity 0.3s ease;
     }
 
     .thumbnail-container {
@@ -279,8 +274,9 @@
         overflow: hidden;
         cursor: pointer;
         opacity: 0.6;
-        transition: opacity 0.3s, transform 0.3s;
+        transition: all 0.3s ease;
         flex-shrink: 0;
+        border: 2px solid transparent;
     }
 
     .thumbnail:hover {
@@ -290,7 +286,7 @@
 
     .thumbnail.active {
         opacity: 1;
-        border: 2px solid #3498db;
+        border-color: #3498db;
     }
 
     .thumbnail img {
@@ -484,85 +480,120 @@
 </style>
 
 <script>
-    // Image Gallery Functionality
-    function changeMainImage(thumbnail) {
-        const mainImg = document.getElementById('mainCabinImage');
-        mainImg.src = thumbnail.src;
-
-        // Update active thumbnail
-        document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
-        thumbnail.parentElement.classList.add('active');
-    }
-
-    function handleImageError(img) {
-        console.error('Failed to load image:', img.src);
-        // Only replace with default if this isn't already the default image
-        if (!img.src.includes('default-cabin.jpg')) {
-            img.src = '${pageContext.request.contextPath}/images/default-cabin.jpg';
-        }
-        // Hide the parent thumbnail if this is a thumbnail
-        if (img.parentElement.classList.contains('thumbnail')) {
-            img.parentElement.style.display = 'none';
-        }
-    }
-
-    // Debug image paths on load
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('Main image path:', document.getElementById('mainCabinImage').src);
+        // Enhanced Image Gallery Functionality
+        const thumbnails = document.querySelectorAll('.thumbnail img');
+        const mainImage = document.getElementById('mainCabinImage');
 
-        document.querySelectorAll('.thumbnail img').forEach((img, index) => {
-            console.log('Thumbnail ' + (index + 1) + ' path:', img.src);
-        });
-    });
+        // Function to change main image
+        function setMainImage(src) {
+            if (!mainImage) return;
 
-    // Initialize map function
-    function initMap(forceShow = false) {
-        const lat = parseFloat(document.getElementById('mapLatitude').value);
-        const lng = parseFloat(document.getElementById('mapLongitude').value);
-        const overlay = document.getElementById('mapOverlay');
+            // Add fade effect
+            mainImage.style.opacity = '0';
 
-        if (isNaN(lat) || isNaN(lng)) {
-            console.error("Invalid coordinates:", lat, lng);
-            if (overlay) overlay.innerHTML = '<p>Map not available</p>';
-            return;
+            setTimeout(() => {
+                mainImage.src = src;
+                mainImage.style.opacity = '1';
+            }, 200);
+
+            // Update active thumbnail
+            thumbnails.forEach(thumb => {
+                const thumbnailContainer = thumb.closest('.thumbnail');
+                if (thumbnailContainer) {
+                    thumbnailContainer.classList.remove('active');
+                    if (thumb.src === src) {
+                        thumbnailContainer.classList.add('active');
+                    }
+                }
+            });
         }
 
-        if (forceShow && overlay) {
-            overlay.style.display = 'none';
-        }
+        // Add click event to thumbnails
+        thumbnails.forEach(thumb => {
+            thumb.addEventListener('click', function() {
+                setMainImage(this.src);
+            });
 
-        const cabinLocation = { lat: lat, lng: lng };
-        const map = new google.maps.Map(document.getElementById("cabinMap"), {
-            zoom: 15,
-            center: cabinLocation,
-            mapTypeId: 'terrain',
-            styles: [{
-                featureType: "poi",
-                stylers: [{ visibility: "off" }]
-            }]
+            // Error handling
+            thumb.addEventListener('error', function() {
+                console.error('Failed to load thumbnail:', this.src);
+                const defaultImg = '${pageContext.request.contextPath}/images/default-cabin.jpg';
+                if (!this.src.includes('default-cabin.jpg')) {
+                    this.src = defaultImg;
+                }
+                this.closest('.thumbnail').style.display = 'none';
+            });
         });
 
-        new google.maps.Marker({
-            position: cabinLocation,
-            map: map,
-            title: document.getElementById('cabinTitle').value,
-            icon: {
-                url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+        // Main image error handling
+        if (mainImage) {
+            mainImage.addEventListener('error', function() {
+                console.error('Failed to load main image:', this.src);
+                this.src = '${pageContext.request.contextPath}/images/default-cabin.jpg';
+            });
+        }
+
+        // Google Maps Initialization
+        function initMap(forceShow = false) {
+            const latEl = document.getElementById('mapLatitude');
+            const lngEl = document.getElementById('mapLongitude');
+            const overlay = document.getElementById('mapOverlay');
+
+            if (!latEl || !lngEl) return;
+
+            const lat = parseFloat(latEl.value);
+            const lng = parseFloat(lngEl.value);
+
+            if (isNaN(lat) || isNaN(lng)) {
+                console.error("Invalid coordinates:", lat, lng);
+                if (overlay) overlay.innerHTML = '<p>Map not available</p>';
+                return;
             }
-        });
-    }
-c
-    // View map button handler
-    document.getElementById('viewMapBtn')?.addEventListener('click', function() {
-        const overlay = document.getElementById('mapOverlay');
-        if (overlay) overlay.style.display = 'none';
-        initMap();
-    });
 
-    // Initialize map if no overlay exists
-    document.addEventListener('DOMContentLoaded', function() {
-        if (!document.getElementById('mapOverlay')) {
+            if (forceShow && overlay) {
+                overlay.style.display = 'none';
+            }
+
+            const cabinLocation = { lat: lat, lng: lng };
+            const map = new google.maps.Map(document.getElementById("cabinMap"), {
+                zoom: 15,
+                center: cabinLocation,
+                mapTypeId: 'hybrid',
+                styles: [{
+                    featureType: "poi",
+                    stylers: [{ visibility: "off" }]
+                }]
+            });
+
+            new google.maps.marker.AdvancedMarkerElement({
+                position: cabinLocation,
+                map: map,
+                title: document.getElementById('cabinTitle')?.value || 'Cabin Location'
+            });
+        }
+
+        // Map button handlers
+        document.getElementById('viewMapBtn')?.addEventListener('click', function() {
+            const overlay = document.getElementById('mapOverlay');
+            if (overlay) overlay.style.display = 'none';
+            initMap();
+        });
+
+        document.getElementById('showMapBtn')?.addEventListener('click', function() {
+            const overlay = document.getElementById('mapOverlay');
+            if (overlay) overlay.style.display = 'none';
+            initMap();
+        });
+
+        // Initialize map if coordinates exist and no overlay
+        if (!document.getElementById('mapOverlay') &&
+            document.getElementById('mapLatitude') &&
+            document.getElementById('mapLongitude')) {
             initMap(true);
         }
     });
 </script>
+
+<!-- Load Google Maps API with your key -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&loading=async&callback=initMap" async defer></script> this is my current code give me full updated code with css html js everthing

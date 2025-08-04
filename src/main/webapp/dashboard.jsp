@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+ <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,10 +48,13 @@
             </div>
             <ul class="sidebar-menu">
                 <li><a href="#" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                 <li><a href="available-cabins"><i class="fas fa-cabin"></i> View Cabins</a></li>
                 <li><a href="#"><i class="fas fa-calendar-check"></i> My Bookings</a></li>
                 <li><a href="#"><i class="fas fa-heart"></i> Wishlist</a></li>
                 <li><a href="#"><i class="fas fa-cog"></i> Account Settings</a></li>
                 <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+
+
             </ul>
         </aside>
 
@@ -152,67 +156,40 @@
             </div>
 
             <!-- Wishlist -->
+
+            <!-- Wishlist -->
             <div class="recent-bookings">
                 <div class="section-header">
-                    <h2 class="section-title">Your Wishlist</h2>
+                    <h2 class="section-title">Available Cabins</h2>
                     <a href="#" class="btn primary">View All</a>
                 </div>
                 <div class="wishlist">
-                    <div class="cabin-card">
-                        <div class="cabin-image">
-                            <img src="https://images.unsplash.com/photo-1580048915913-4f8f5cb481c2?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=800" alt="Mountain View Cabin">
-                            <button class="wishlist-btn active"><i class="fas fa-heart"></i></button>
-                        </div>
-                        <div class="cabin-details">
-                            <h4>Mountain View Lodge</h4>
-                            <div class="cabin-meta">
-                                <span><i class="fas fa-user-friends"></i> 6 Guests</span>
-                                <span><i class="fas fa-bed"></i> 3 Bedrooms</span>
+                    <c:forEach var="cabin" items="${cabinList}">
+                        <div class="cabin-card">
+                            <div class="cabin-image">
+                                <img src="<c:out value='${cabin.imageUrls != null && !cabin.imageUrls.isEmpty() ? cabin.imageUrls[0] : cabin.imageUrl}'/>"
+                                     alt="${cabin.name}" style="width:100%; height:200px; object-fit:cover;">
+                                <button class="wishlist-btn"><i class="fas fa-heart"></i></button>
+                            </div>
+                            <div class="cabin-details">
+                                <h4>${cabin.name}</h4>
+                                <p>${cabin.location}</p>
+                                <div class="cabin-meta">
+                                    <span><i class="fas fa-user-friends"></i> ${cabin.maxGuests} Guests</span>
+                                    <span><i class="fas fa-bed"></i> ${cabin.bedrooms} Bedrooms</span>
+                                    <span><i class="fas fa-bath"></i> ${cabin.bathrooms} Bathrooms</span>
+                                </div>
+                                <p style="font-size: 0.9rem; margin-top: 5px;">${cabin.description}</p>
+                            </div>
+                            <div class="cabin-footer">
+                                <div class="price">₹${cabin.pricePerNight} <span>/night</span></div>
+                                <button class="btn primary">Book Now</button>
                             </div>
                         </div>
-                        <div class="cabin-footer">
-                            <div class="price">$289 <span>/night</span></div>
-                            <button class="btn primary">Book Now</button>
-                        </div>
-                    </div>
-                    <div class="cabin-card">
-                        <div class="cabin-image">
-                            <img src="https://images.unsplash.com/photo-1591825729269-caeb344f6df2?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=800" alt="Lakeside Retreat">
-                            <button class="wishlist-btn active"><i class="fas fa-heart"></i></button>
-                        </div>
-                        <div class="cabin-details">
-                            <h4>Lakeside Retreat</h4>
-                            <div class="cabin-meta">
-                                <span><i class="fas fa-user-friends"></i> 4 Guests</span>
-                                <span><i class="fas fa-bed"></i> 2 Bedrooms</span>
-                            </div>
-                        </div>
-                        <div class="cabin-footer">
-                            <div class="price">$329 <span>/night</span></div>
-                            <button class="btn primary">Book Now</button>
-                        </div>
-                    </div>
-                    <div class="cabin-card">
-                        <div class="cabin-image">
-                            <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&w=800" alt="Forest Haven">
-                            <button class="wishlist-btn active"><i class="fas fa-heart"></i></button>
-                        </div>
-                        <div class="cabin-details">
-                            <h4>Forest Haven</h4>
-                            <div class="cabin-meta">
-                                <span><i class="fas fa-user-friends"></i> 8 Guests</span>
-                                <span><i class="fas fa-bed"></i> 4 Bedrooms</span>
-                            </div>
-                        </div>
-                        <div class="cabin-footer">
-                            <div class="price">$399 <span>/night</span></div>
-                            <button class="btn primary">Book Now</button>
-                        </div>
-                    </div>
+                    </c:forEach>
                 </div>
             </div>
-        </main>
-    </div>
+
  <script src="assets/js/user-dashboard.js"></script>
 </body>
 </html>

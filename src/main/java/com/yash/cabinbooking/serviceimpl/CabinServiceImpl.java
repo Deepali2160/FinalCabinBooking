@@ -68,4 +68,9 @@ public class CabinServiceImpl implements CabinService {
         }
         return cabin;
     }
+    @Override
+    public List<Cabin> getAvailableCabins() {
+        return cabinDAO.getAvailableCabins();  // 👈 Dao se data fetch
+    }
+
 }
