@@ -2,80 +2,33 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
 <div class="cabin-details-container">
-    <!-- Hidden fields for map initialization -->
-    <input type="hidden" id="mapLatitude" value="${cabin.latitude}">
-    <input type="hidden" id="mapLongitude" value="${cabin.longitude}">
-    <input type="hidden" id="cabinTitle" value="${cabin.name}">
-
     <!-- Header Section -->
     <div class="cabin-header">
         <div>
             <h2>${cabin.name}</h2>
             <p class="location">
                 <i class="fas fa-map-marker-alt"></i> ${cabin.location}
-                <c:if test="${not empty cabin.latitude && not empty cabin.longitude}">
-                    <button id="viewMapBtn" class="map-btn">
-                        <i class="fas fa-map"></i> View on Map
-                    </button>
-                </c:if>
             </p>
         </div>
         <div class="status-badges">
             <span class="status ${cabin.available ? 'available' : 'unavailable'}">
                 ${cabin.available ? 'Available' : 'Not Available'}
             </span>
-            <c:if test="${cabin.featured}">
-                <span class="featured-badge">
-                    <i class="fas fa-star"></i> Featured
-                </span>
-            </c:if>
         </div>
     </div>
 
-    <!-- Image Gallery -->
-    <div class="image-gallery">
+    <!-- Image Section -->
+    <div class="image-section">
         <div class="main-image">
             <c:choose>
-                <c:when test="${not empty cabin.imageUrls}">
-                    <img src="${pageContext.request.contextPath}${cabin.imageUrls[0].startsWith('/') ? '' : '/'}${cabin.imageUrls[0]}"
-                         alt="Main image of ${cabin.name}"
-                         id="mainCabinImage">
-                </c:when>
                 <c:when test="${not empty cabin.imageUrl}">
-                    <img src="${pageContext.request.contextPath}${cabin.imageUrl.startsWith('/') ? '' : '/'}${cabin.imageUrl}"
-                         alt="Main image of ${cabin.name}"
+                    <<img src="${pageContext.request.contextPath}/${cabin.imageUrl}" alt="Cabin Image"
                          id="mainCabinImage">
                 </c:when>
                 <c:otherwise>
                     <img src="${pageContext.request.contextPath}/images/default-cabin.jpg"
                          alt="Default cabin image"
                          id="mainCabinImage">
-                </c:otherwise>
-            </c:choose>
-        </div>
-
-        <div class="thumbnail-container">
-            <c:choose>
-                <c:when test="${not empty cabin.imageUrls}">
-                    <c:forEach items="${cabin.imageUrls}" var="image" varStatus="loop">
-                        <div class="thumbnail ${loop.index == 0 ? 'active' : ''}">
-                            <img src="${pageContext.request.contextPath}${image.startsWith('/') ? '' : '/'}${image}"
-                                 alt="Cabin image ${loop.index + 1}"
-                                 data-index="${loop.index}">
-                        </div>
-                    </c:forEach>
-                </c:when>
-                <c:when test="${not empty cabin.imageUrl}">
-                    <div class="thumbnail active">
-                        <img src="${pageContext.request.contextPath}${cabin.imageUrl.startsWith('/') ? '' : '/'}${cabin.imageUrl}"
-                             alt="Single image">
-                    </div>
-                </c:when>
-                <c:otherwise>
-                    <div class="thumbnail active">
-                        <img src="${pageContext.request.contextPath}/images/default-cabin.jpg"
-                             alt="Default thumbnail">
-                    </div>
                 </c:otherwise>
             </c:choose>
         </div>
@@ -117,39 +70,16 @@
                         <i class="fas fa-rupee-sign"></i>
                         <div>
                             <span class="spec-label">Price</span>
-                            <span class="spec-value">₹${cabin.pricePerNight}/night</span>
+                            <span class="spec-value">₹${cabin.hourlyRate}/hour</span>
                         </div>
                     </div>
                     <div class="spec-item">
                         <i class="fas fa-users"></i>
                         <div>
-                            <span class="spec-label">Guests</span>
-                            <span class="spec-value">${cabin.maxGuests}</span>
+                            <span class="spec-label">Capacity</span>
+                            <span class="spec-value">${cabin.capacity}</span>
                         </div>
                     </div>
-                    <div class="spec-item">
-                        <i class="fas fa-bed"></i>
-                        <div>
-                            <span class="spec-label">Bedrooms</span>
-                            <span class="spec-value">${cabin.bedrooms}</span>
-                        </div>
-                    </div>
-                    <div class="spec-item">
-                        <i class="fas fa-shower"></i>
-                        <div>
-                            <span class="spec-label">Bathrooms</span>
-                            <span class="spec-value">${cabin.bathrooms}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="cabinMapContainer" class="map-container">
-                <div id="cabinMap"></div>
-                <div class="map-overlay" id="mapOverlay">
-                    <button class="btn primary" id="showMapBtn">
-                        <i class="fas fa-map-marked-alt"></i> Show Map
-                    </button>
                 </div>
             </div>
         </div>
@@ -190,22 +120,6 @@
         font-size: 16px;
     }
 
-    .map-btn {
-        background: none;
-        border: none;
-        color: #3498db;
-        cursor: pointer;
-        font-size: 14px;
-        margin-left: 10px;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .map-btn:hover {
-        text-decoration: underline;
-    }
-
     .status-badges {
         display: flex;
         gap: 10px;
@@ -228,20 +142,8 @@
         color: #e74c3c;
     }
 
-    .featured-badge {
-        background: #fff3e0;
-        color: #f39c12;
-        padding: 5px 15px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    /* Image Gallery Styles */
-    .image-gallery {
+    /* Image Section Styles */
+    .image-section {
         margin-bottom: 30px;
     }
 
@@ -250,46 +152,9 @@
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin-bottom: 15px;
     }
 
     .main-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: opacity 0.3s ease;
-    }
-
-    .thumbnail-container {
-        display: flex;
-        gap: 10px;
-        overflow-x: auto;
-        padding-bottom: 10px;
-    }
-
-    .thumbnail {
-        width: 80px;
-        height: 60px;
-        border-radius: 5px;
-        overflow: hidden;
-        cursor: pointer;
-        opacity: 0.6;
-        transition: all 0.3s ease;
-        flex-shrink: 0;
-        border: 2px solid transparent;
-    }
-
-    .thumbnail:hover {
-        opacity: 0.8;
-        transform: scale(1.05);
-    }
-
-    .thumbnail.active {
-        opacity: 1;
-        border-color: #3498db;
-    }
-
-    .thumbnail img {
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -404,51 +269,6 @@
         color: #2c3e50;
     }
 
-    .map-container {
-        position: relative;
-        background: #f5f5f5;
-        border-radius: 10px;
-        overflow: hidden;
-        height: 300px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    #cabinMap {
-        height: 100%;
-        width: 100%;
-    }
-
-    .map-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.2);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 10;
-    }
-
-    .btn.primary {
-        background-color: #3498db;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: background-color 0.3s;
-    }
-
-    .btn.primary:hover {
-        background-color: #2980b9;
-    }
-
     @media (max-width: 992px) {
         .details-section {
             grid-template-columns: 1fr;
@@ -467,133 +287,18 @@
         .main-image {
             height: 300px;
         }
-
-        .thumbnail-container {
-            gap: 8px;
-        }
-
-        .thumbnail {
-            width: 70px;
-            height: 50px;
-        }
     }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Enhanced Image Gallery Functionality
-        const thumbnails = document.querySelectorAll('.thumbnail img');
-        const mainImage = document.getElementById('mainCabinImage');
-
-        // Function to change main image
-        function setMainImage(src) {
-            if (!mainImage) return;
-
-            // Add fade effect
-            mainImage.style.opacity = '0';
-
-            setTimeout(() => {
-                mainImage.src = src;
-                mainImage.style.opacity = '1';
-            }, 200);
-
-            // Update active thumbnail
-            thumbnails.forEach(thumb => {
-                const thumbnailContainer = thumb.closest('.thumbnail');
-                if (thumbnailContainer) {
-                    thumbnailContainer.classList.remove('active');
-                    if (thumb.src === src) {
-                        thumbnailContainer.classList.add('active');
-                    }
-                }
-            });
-        }
-
-        // Add click event to thumbnails
-        thumbnails.forEach(thumb => {
-            thumb.addEventListener('click', function() {
-                setMainImage(this.src);
-            });
-
-            // Error handling
-            thumb.addEventListener('error', function() {
-                console.error('Failed to load thumbnail:', this.src);
-                const defaultImg = '${pageContext.request.contextPath}/images/default-cabin.jpg';
-                if (!this.src.includes('default-cabin.jpg')) {
-                    this.src = defaultImg;
-                }
-                this.closest('.thumbnail').style.display = 'none';
-            });
-        });
-
         // Main image error handling
+        const mainImage = document.getElementById('mainCabinImage');
         if (mainImage) {
             mainImage.addEventListener('error', function() {
                 console.error('Failed to load main image:', this.src);
                 this.src = '${pageContext.request.contextPath}/images/default-cabin.jpg';
             });
         }
-
-        // Google Maps Initialization
-        function initMap(forceShow = false) {
-            const latEl = document.getElementById('mapLatitude');
-            const lngEl = document.getElementById('mapLongitude');
-            const overlay = document.getElementById('mapOverlay');
-
-            if (!latEl || !lngEl) return;
-
-            const lat = parseFloat(latEl.value);
-            const lng = parseFloat(lngEl.value);
-
-            if (isNaN(lat) || isNaN(lng)) {
-                console.error("Invalid coordinates:", lat, lng);
-                if (overlay) overlay.innerHTML = '<p>Map not available</p>';
-                return;
-            }
-
-            if (forceShow && overlay) {
-                overlay.style.display = 'none';
-            }
-
-            const cabinLocation = { lat: lat, lng: lng };
-            const map = new google.maps.Map(document.getElementById("cabinMap"), {
-                zoom: 15,
-                center: cabinLocation,
-                mapTypeId: 'hybrid',
-                styles: [{
-                    featureType: "poi",
-                    stylers: [{ visibility: "off" }]
-                }]
-            });
-
-            new google.maps.marker.AdvancedMarkerElement({
-                position: cabinLocation,
-                map: map,
-                title: document.getElementById('cabinTitle')?.value || 'Cabin Location'
-            });
-        }
-
-        // Map button handlers
-        document.getElementById('viewMapBtn')?.addEventListener('click', function() {
-            const overlay = document.getElementById('mapOverlay');
-            if (overlay) overlay.style.display = 'none';
-            initMap();
-        });
-
-        document.getElementById('showMapBtn')?.addEventListener('click', function() {
-            const overlay = document.getElementById('mapOverlay');
-            if (overlay) overlay.style.display = 'none';
-            initMap();
-        });
-
-        // Initialize map if coordinates exist and no overlay
-        if (!document.getElementById('mapOverlay') &&
-            document.getElementById('mapLatitude') &&
-            document.getElementById('mapLongitude')) {
-            initMap(true);
-        }
     });
 </script>
-
-<!-- Load Google Maps API with your key -->
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&loading=async&callback=initMap" async defer></script>

@@ -10,14 +10,5 @@ public interface CabinService {
     Cabin getCabinById(int id);
     List<Cabin> getAllCabins();
     boolean toggleAvailability(int id, boolean available);
-    boolean toggleFeatured(int id, boolean featured);
-    boolean addCabinImage(int cabinId, String imageUrl);
-    List<String> getCabinImages(int cabinId);
-    boolean deleteCabinImage(int imageId);
-
-    // Optional: Add method to get cabin with all images
-    Cabin getCabinWithImages(int id);
-
-    List<Cabin> getAvailableCabins();  // 👈 user ke liye method
-
+    List<Cabin> getAvailableCabins();  // for users
 }

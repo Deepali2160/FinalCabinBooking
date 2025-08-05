@@ -43,45 +43,45 @@ public class BookingDaoImpl implements BookingDao {
     }
 
 
-        public boolean addBooking (Booking booking){
-            String sql = "INSERT INTO bookings (user_id, cabin_name, start_date, end_date, guests, amount, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            try {
-                conn.setAutoCommit(false);  // Begin transaction
+    public boolean addBooking (Booking booking){
+        String sql = "INSERT INTO bookings (user_id, cabin_name, start_date, end_date, guests, amount, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try {
+            conn.setAutoCommit(false);  // Begin transaction
 
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setInt(1, booking.getUserId());
-                    ps.setString(2, booking.getCabinName());
-                    ps.setDate(3, new java.sql.Date(booking.getStartDate().getTime()));
-                    ps.setDate(4, new java.sql.Date(booking.getEndDate().getTime()));
-                    ps.setInt(5, booking.getGuests());
-                    ps.setDouble(6, booking.getAmount());
-                    ps.setString(7, booking.getStatus());
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, booking.getUserId());
+                ps.setString(2, booking.getCabinName());
+                ps.setDate(3, new java.sql.Date(booking.getStartDate().getTime()));
+                ps.setDate(4, new java.sql.Date(booking.getEndDate().getTime()));
+                ps.setInt(5, booking.getGuests());
+                ps.setDouble(6, booking.getAmount());
+                ps.setString(7, booking.getStatus());
 
-                    int rowsInserted = ps.executeUpdate();
+                int rowsInserted = ps.executeUpdate();
 
-                    if (rowsInserted == 1) {
-                        conn.commit(); // ✅ Commit transaction
-                        return true;
-                    } else {
-                        conn.rollback(); // ❌ Something went wrong, rollback
-                    }
-                }
-
-            } catch (Exception e) {
-                try {
-                    if (conn != null) conn.rollback(); // rollback in case of exception
-                } catch (SQLException rollbackEx) {
-                    rollbackEx.printStackTrace();
-                }
-                e.printStackTrace();
-            } finally {
-                try {
-                    if (conn != null) conn.setAutoCommit(true); // reset auto-commit to true
-                } catch (SQLException e) {
-                    e.printStackTrace();
+                if (rowsInserted == 1) {
+                    conn.commit(); // ✅ Commit transaction
+                    return true;
+                } else {
+                    conn.rollback(); // ❌ Something went wrong, rollback
                 }
             }
 
-            return false;
+        } catch (Exception e) {
+            try {
+                if (conn != null) conn.rollback(); // rollback in case of exception
+            } catch (SQLException rollbackEx) {
+                rollbackEx.printStackTrace();
+            }
+            e.printStackTrace();
+        } finally {
+            try {
+                if (conn != null) conn.setAutoCommit(true); // reset auto-commit to true
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
+
+        return false;
     }
+}

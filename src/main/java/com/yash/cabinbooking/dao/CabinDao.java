@@ -10,10 +10,6 @@ public interface CabinDao {
     Cabin getCabinById(int id);
     List<Cabin> getAllCabins();
     boolean toggleAvailability(int id, boolean available);
-    boolean toggleFeatured(int id, boolean featured);
-    List<String> getCabinImages(int cabinId);
-    boolean addCabinImage(int cabinId, String imageUrl);
-    boolean deleteCabinImage(int imageId);
     List<Cabin> getAvailableCabins(); // 🧑‍💻 USER ke liye
 
 }

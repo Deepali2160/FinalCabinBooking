@@ -17,9 +17,8 @@ public class CabinDaoImpl implements CabinDao {
 
     @Override
     public boolean addCabin(Cabin cabin) {
-        String sql = "INSERT INTO cabins (name, description, location, price_per_night, max_guests, "
-                + "bedrooms, bathrooms, amenities, image_url, is_available, is_featured, created_at, latitude, longitude) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO cabins (name, location, capacity, hourly_rate, description, amenities, image_url, is_available, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         Connection conn = null;
         try {
@@ -30,19 +29,14 @@ public class CabinDaoImpl implements CabinDao {
                 cabin.setCreatedAt(LocalDateTime.now());
 
                 ps.setString(1, cabin.getName());
-                ps.setString(2, cabin.getDescription());
-                ps.setString(3, cabin.getLocation());
-                ps.setDouble(4, cabin.getPricePerNight());
-                ps.setInt(5, cabin.getMaxGuests());
-                ps.setInt(6, cabin.getBedrooms());
-                ps.setInt(7, cabin.getBathrooms());
-                ps.setString(8, cabin.getAmenities());
-                ps.setString(9, cabin.getImageUrl());
-                ps.setBoolean(10, cabin.isAvailable());
-                ps.setBoolean(11, cabin.isFeatured());
-                ps.setTimestamp(12, Timestamp.valueOf(cabin.getCreatedAt()));
-                ps.setDouble(13, cabin.getLatitude());
-                ps.setDouble(14, cabin.getLongitude());
+                ps.setString(2, cabin.getLocation());
+                ps.setInt(3, cabin.getCapacity());
+                ps.setDouble(4, cabin.getHourlyRate());
+                ps.setString(5, cabin.getDescription());
+                ps.setString(6, cabin.getAmenities());
+                ps.setString(7, cabin.getImageUrl());
+                ps.setBoolean(8, cabin.isAvailable());
+                ps.setTimestamp(9, Timestamp.valueOf(cabin.getCreatedAt()));
 
                 int affectedRows = ps.executeUpdate();
 
@@ -75,9 +69,10 @@ public class CabinDaoImpl implements CabinDao {
 
     @Override
     public boolean updateCabin(Cabin cabin) {
-        String sql = "UPDATE cabins SET name=?, description=?, location=?, price_per_night=?, "
-                + "max_guests=?, bedrooms=?, bathrooms=?, amenities=?, image_url=?, "
-                + "is_available=?, is_featured=?, updated_at=NOW(), latitude=?, longitude=? WHERE id=?";
+        String sql = "UPDATE cabins SET name=?, location=?, capacity=?, hourly_rate=?, "
+                + "description=?, amenities=?, image_url=?, is_available=?, "
+                + "updated_at=NOW() WHERE id=?";
+
 
         Connection conn = null;
         try {
@@ -85,19 +80,15 @@ public class CabinDaoImpl implements CabinDao {
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
                 ps.setString(1, cabin.getName());
-                ps.setString(2, cabin.getDescription());
-                ps.setString(3, cabin.getLocation());
-                ps.setDouble(4, cabin.getPricePerNight());
-                ps.setInt(5, cabin.getMaxGuests());
-                ps.setInt(6, cabin.getBedrooms());
-                ps.setInt(7, cabin.getBathrooms());
-                ps.setString(8, cabin.getAmenities());
-                ps.setString(9, cabin.getImageUrl());
-                ps.setBoolean(10, cabin.isAvailable());
-                ps.setBoolean(11, cabin.isFeatured());
-                ps.setDouble(12, cabin.getLatitude());
-                ps.setDouble(13, cabin.getLongitude());
-                ps.setInt(14, cabin.getId());
+                ps.setString(2, cabin.getLocation());
+                ps.setInt(3, cabin.getCapacity());
+                ps.setDouble(4, cabin.getHourlyRate());
+                ps.setString(5, cabin.getDescription());
+                ps.setString(6, cabin.getAmenities());
+                ps.setString(7, cabin.getImageUrl());
+                ps.setBoolean(8, cabin.isAvailable());
+                ps.setInt(9, cabin.getId());
+
 
                 int affectedRows = ps.executeUpdate();
                 DBConnection.commitAndClose(conn);
@@ -224,30 +215,7 @@ public class CabinDaoImpl implements CabinDao {
         }
     }
 
-    @Override
-    public boolean toggleFeatured(int id, boolean featured) {
-        String sql = "UPDATE cabins SET is_featured=?, updated_at=NOW() WHERE id=?";
 
-        Connection conn = null;
-        try {
-            conn = DBConnection.getConnection();
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setBoolean(1, featured);
-                ps.setInt(2, id);
-
-                int affectedRows = ps.executeUpdate();
-                DBConnection.commitAndClose(conn);
-
-                logger.info("Toggled featured status for cabin ID " + id + " to " + featured
-                        + ". Rows affected: " + affectedRows);
-                return affectedRows == 1;
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error toggling featured status for cabin ID " + id, e);
-            DBConnection.rollbackAndClose(conn);
-            return false;
-        }
-    }
 
     private Cabin mapCabin(ResultSet rs) throws SQLException {
         Cabin cabin = new Cabin();
@@ -255,18 +223,13 @@ public class CabinDaoImpl implements CabinDao {
         cabin.setName(rs.getString("name"));
         cabin.setDescription(rs.getString("description"));
         cabin.setLocation(rs.getString("location"));
-        cabin.setPricePerNight(rs.getDouble("price_per_night"));
-        cabin.setMaxGuests(rs.getInt("max_guests"));
-        cabin.setBedrooms(rs.getInt("bedrooms"));
-        cabin.setBathrooms(rs.getInt("bathrooms"));
+        cabin.setHourlyRate(rs.getDouble("hourly_rate"));
+        cabin.setCapacity(rs.getInt("capacity"));
         cabin.setAmenities(rs.getString("amenities"));
         cabin.setImageUrl(rs.getString("image_url"));
         cabin.setAvailable(rs.getBoolean("is_available"));
-        cabin.setFeatured(rs.getBoolean("is_featured"));
-        cabin.setLatitude(rs.getDouble("latitude"));
-        cabin.setLongitude(rs.getDouble("longitude"));
 
-        // Handle null timestamps safely
+        // Handle created_at safely
         Timestamp createdAt = rs.getTimestamp("created_at");
         if (createdAt != null) {
             cabin.setCreatedAt(createdAt.toLocalDateTime());
@@ -275,6 +238,7 @@ public class CabinDaoImpl implements CabinDao {
             cabin.setCreatedAt(LocalDateTime.now());
         }
 
+        // Handle updated_at safely
         Timestamp updatedAt = rs.getTimestamp("updated_at");
         if (updatedAt != null) {
             cabin.setUpdatedAt(updatedAt.toLocalDateTime());
@@ -283,71 +247,9 @@ public class CabinDaoImpl implements CabinDao {
         return cabin;
     }
 
-    @Override
-    public List<String> getCabinImages(int cabinId) {
-        String sql = "SELECT image_url FROM cabin_images WHERE cabin_id = ? ORDER BY created_at";
-        List<String> images = new ArrayList<>();
 
-        Connection conn = null;
-        try {
-            conn = DBConnection.getConnection();
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, cabinId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        images.add(rs.getString("image_url"));
-                    }
-                }
-                DBConnection.commitAndClose(conn);
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error getting cabin images", e);
-            DBConnection.rollbackAndClose(conn);
-        }
 
-        return images;
-    }
 
-    @Override
-    public boolean addCabinImage(int cabinId, String imageUrl) {
-        String sql = "INSERT INTO cabin_images (cabin_id, image_url) VALUES (?, ?)";
-
-        Connection conn = null;
-        try {
-            conn = DBConnection.getConnection();
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, cabinId);
-                ps.setString(2, imageUrl);
-                boolean result = ps.executeUpdate() > 0;
-                DBConnection.commitAndClose(conn);
-                return result;
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error adding cabin image", e);
-            DBConnection.rollbackAndClose(conn);
-            return false;
-        }
-    }
-
-    @Override
-    public boolean deleteCabinImage(int imageId) {
-        String sql = "DELETE FROM cabin_images WHERE id = ?";
-
-        Connection conn = null;
-        try {
-            conn = DBConnection.getConnection();
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, imageId);
-                boolean result = ps.executeUpdate() > 0;
-                DBConnection.commitAndClose(conn);
-                return result;
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error deleting cabin image", e);
-            DBConnection.rollbackAndClose(conn);
-            return false;
-        }
-    }
     @Override
     public List<Cabin> getAvailableCabins() {
         List<Cabin> cabins = new ArrayList<>();

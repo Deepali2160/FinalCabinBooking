@@ -176,23 +176,6 @@
       width: 90%;
       padding: 30px;
     }
-    .cabin-gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    .cabin-gallery img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: transform 0.3s;
-    }
-    .cabin-gallery img:hover {
-      transform: scale(1.03);
-    }
     .cabin-info {
       display: grid;
       grid-template-columns: 2fr 1fr;
@@ -214,14 +197,6 @@
       align-items: center;
       gap: 8px;
       margin-bottom: 8px;
-    }
-    #cabinMap {
-      height: 300px;
-      width: 100%;
-      border-radius: 8px;
-      margin-top: 20px;
-      background: #f5f5f5;
-      border: 1px solid #ddd;
     }
     .more-content {
       display: none;
@@ -309,34 +284,26 @@
                 <div class="cabin-details">
                   <h4>${fn:escapeXml(cabin.name)}</h4>
                   <div class="cabin-meta">
-                    <span><i class="fas fa-user-friends"></i> ${cabin.maxGuests} Guests</span>
-                    <span><i class="fas fa-bed"></i> ${cabin.bedrooms} Bedrooms</span>
-                    <span><i class="fas fa-shower"></i> ${cabin.bathrooms} Baths</span>
+                    <span><i class="fas fa-user-friends"></i> ${cabin.capacity} Guests</span>
                   </div>
                   <p>${fn:escapeXml(cabin.amenities)}</p>
                   <div class="status" style="${cabin.available ? 'background:#e2f0d9;color:#27ae60;' : 'background:#f7d6d8;color:#e74c3c;'}">
                     ${cabin.available ? 'Available' : 'Not Available'}
-                    <c:if test="${cabin.featured}">
-                      <span style="margin-left: 10px; color: #f1c40f;"><i class="fas fa-star"></i> Featured</span>
-                    </c:if>
                   </div>
                 </div>
                 <div class="cabin-footer">
-                  <div>₹${cabin.pricePerNight} / night</div>
+                  <div>₹${cabin.hourlyRate} / hour</div>
                   <div>
                     <button type="button" class="action-btn edit-btn" title="Edit"
                       data-id="${cabin.id}"
                       data-name="${fn:escapeXml(cabin.name)}"
                       data-description="${fn:escapeXml(cabin.description)}"
                       data-location="${fn:escapeXml(cabin.location)}"
-                      data-price="${cabin.pricePerNight}"
-                      data-maxguests="${cabin.maxGuests}"
-                      data-bedrooms="${cabin.bedrooms}"
-                      data-bathrooms="${cabin.bathrooms}"
+                      data-price="${cabin.hourlyRate}"
+                      data-capacity="${cabin.capacity}"
                       data-amenities="${fn:escapeXml(cabin.amenities)}"
                       data-imageurl="${cabin.imageUrl}"
                       data-available="${cabin.available}"
-                      data-featured="${cabin.featured}"
                       onclick="event.stopPropagation()">
                       <i class="fas fa-edit"></i>
                     </button>
@@ -353,16 +320,6 @@
                       <input type="hidden" name="available" value="${!cabin.available}"/>
                       <label class="switch" title="Toggle Availability">
                         <input type="checkbox" ${cabin.available ? 'checked' : ''} onchange="this.form.submit()">
-                        <span class="slider round"></span>
-                      </label>
-                    </form>
-                    <form action="${pageContext.request.contextPath}/admin/cabin" method="post" style="display:inline"
-                      onclick="event.stopPropagation()">
-                      <input type="hidden" name="action" value="toggleFeatured"/>
-                      <input type="hidden" name="id" value="${cabin.id}"/>
-                      <input type="hidden" name="featured" value="${!cabin.featured}"/>
-                      <label class="switch" title="Toggle Featured">
-                        <input type="checkbox" ${cabin.featured ? 'checked' : ''} onchange="this.form.submit()">
                         <span class="slider round"></span>
                       </label>
                     </form>
@@ -397,47 +354,21 @@
         <label for="cabinLocation">Location</label>
         <input type="text" id="cabinLocation" name="location" required placeholder="Location" />
 
-        <label for="latitude">Latitude</label>
-        <input type="text" id="latitude" name="latitude" placeholder="e.g., 30.123456" />
+        <label for="cabinPrice">Hourly Rate</label>
+        <input type="number" id="cabinPrice" name="hourlyRate" required min="100" step="0.01" placeholder="Hourly Rate" />
 
-        <label for="longitude">Longitude</label>
-        <input type="text" id="longitude" name="longitude" placeholder="e.g., 78.123456" />
+        <label for="cabinCapacity">Capacity</label>
+        <input type="number" id="cabinCapacity" name="capacity" required min="1" max="20" placeholder="Capacity" />
 
-        <div style="display:flex; gap:10px;">
-          <div style="flex:1;">
-            <label for="cabinPrice">Price per Night</label>
-            <input type="number" id="cabinPrice" name="pricePerNight" required min="100" step="0.01" placeholder="Price" />
-          </div>
-          <div style="flex:1;">
-            <label for="cabinMaxGuests">Guests</label>
-            <input type="number" id="cabinMaxGuests" name="maxGuests" required min="1" max="20" placeholder="Guests" />
-          </div>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <div style="flex:1;">
-            <label for="cabinBedrooms">Bedrooms</label>
-            <input type="number" id="cabinBedrooms" name="bedrooms" required min="1" max="10" placeholder="Bedrooms" />
-          </div>
-          <div style="flex:1;">
-            <label for="cabinBathrooms">Bathrooms</label>
-            <input type="number" id="cabinBathrooms" name="bathrooms" required min="1" max="10" placeholder="Bathrooms" />
-          </div>
-        </div>
-
-        <label for="cabinAmenities" style="margin-top:10px;">Amenities (comma separated)</label>
+        <label for="cabinAmenities">Amenities (comma separated)</label>
         <input type="text" id="cabinAmenities" name="amenities" required placeholder="Wifi, Parking, Fireplace" />
 
-        <label for="cabinImage" style="margin-top:10px;">Primary Image (JPG/PNG max 5MB)</label>
+        <label for="cabinImage">Primary Image (JPG/PNG max 5MB)</label>
         <input type="file" id="cabinImage" name="image" accept="image/*" />
         <img id="imagePreview" alt="Image Preview" />
 
-        <label for="additionalImages" style="margin-top:10px;">Additional Images (Multiple select)</label>
-        <input type="file" id="additionalImages" name="additionalImages" accept="image/*" multiple />
-
         <div style="margin-top:15px;">
           <label><input type="checkbox" id="cabinAvailable" name="isAvailable" value="true" checked /> Available</label>
-          <label style="margin-left:20px;"><input type="checkbox" id="cabinFeatured" name="isFeatured" value="true" /> Featured</label>
         </div>
 
         <button type="submit" class="btn primary" style="margin-top:15px;">Save</button>
@@ -470,7 +401,6 @@
   </div>
 
 <script src="${pageContext.request.contextPath}/assets/js/admin-dashboard.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_ACTUAL_API_KEY&callback=initMap" async defer></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const contextPath = '${pageContext.request.contextPath}';
@@ -499,11 +429,7 @@
             document.getElementById('modalTitle').textContent = 'Add New Cabin';
             imagePreview.src = '';
             imagePreview.style.display = 'none';
-
-            // Reset checkboxes
             document.getElementById('cabinAvailable').checked = true;
-            document.getElementById('cabinFeatured').checked = false;
-
             cabinModal.style.display = 'flex';
         });
 
@@ -544,15 +470,12 @@
                 document.getElementById('cabinDescription').value = this.dataset.description || '';
                 document.getElementById('cabinLocation').value = this.dataset.location || '';
                 document.getElementById('cabinPrice').value = this.dataset.price || '';
-                document.getElementById('cabinMaxGuests').value = this.dataset.maxguests || '';
-                document.getElementById('cabinBedrooms').value = this.dataset.bedrooms || '';
-                document.getElementById('cabinBathrooms').value = this.dataset.bathrooms || '';
+                document.getElementById('cabinCapacity').value = this.dataset.capacity || '';
                 document.getElementById('cabinAmenities').value = this.dataset.amenities || '';
                 document.getElementById('cabinAvailable').checked = this.dataset.available === 'true';
-                document.getElementById('cabinFeatured').checked = this.dataset.featured === 'true';
 
                 if(this.dataset.imageurl) {
-                    imagePreview.src = contextPath + '/' + this.dataset.imageurl;
+                    imagePreview.src = contextPath + '/images/' + this.dataset.imageurl;
                     imagePreview.style.display = 'block';
                 } else {
                     imagePreview.src = '';
@@ -575,8 +498,7 @@
             let isValid = true;
             const fields = [
                 'cabinName', 'cabinDescription', 'cabinLocation',
-                'cabinPrice', 'cabinMaxGuests', 'cabinBedrooms',
-                'cabinBathrooms', 'cabinAmenities'
+                'cabinPrice', 'cabinCapacity', 'cabinAmenities'
             ];
 
             // Reset error states
@@ -625,33 +547,6 @@
             .then(html => {
                 document.getElementById('detailContent').innerHTML = html;
                 document.getElementById('detailModal').style.display = 'flex';
-
-                // Initialize map if coordinates exist
-                const latEl = document.getElementById('mapLatitude');
-                const lngEl = document.getElementById('mapLongitude');
-
-                if (latEl && lngEl) {
-                    const lat = parseFloat(latEl.value);
-                    const lng = parseFloat(lngEl.value);
-
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        const cabinLocation = { lat: lat, lng: lng };
-                        const map = new google.maps.Map(document.getElementById("cabinMap"), {
-                            zoom: 15,
-                            center: cabinLocation,
-                            mapTypeId: 'hybrid'
-                        });
-
-                        new google.maps.Marker({
-                            position: cabinLocation,
-                            map: map,
-                            title: document.getElementById('cabinTitle')?.value || 'Cabin Location',
-                            icon: {
-                                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
-                            }
-                        });
-                    }
-                }
 
                 // Toggle more content
                 document.querySelectorAll('.toggle-more').forEach(btn => {

@@ -41,36 +41,7 @@ public class CabinServiceImpl implements CabinService {
     }
 
     @Override
-    public boolean toggleFeatured(int id, boolean featured) {
-        return cabinDAO.toggleFeatured(id, featured);
-    }
-    @Override
-    public boolean addCabinImage(int cabinId, String imageUrl) {
-        return cabinDAO.addCabinImage(cabinId, imageUrl);
-    }
-
-    @Override
-    public List<String> getCabinImages(int cabinId) {
-        return cabinDAO.getCabinImages(cabinId);
-    }
-
-    @Override
-    public boolean deleteCabinImage(int imageId) {
-        return cabinDAO.deleteCabinImage(imageId);
-    }
-
-    @Override
-    public Cabin getCabinWithImages(int id) {
-        Cabin cabin = cabinDAO.getCabinById(id);
-        if (cabin != null) {
-            List<String> images = cabinDAO.getCabinImages(id);
-            cabin.setImageUrls(images);
-        }
-        return cabin;
-    }
-    @Override
     public List<Cabin> getAvailableCabins() {
-        return cabinDAO.getAvailableCabins();  // 👈 Dao se data fetch
+        return cabinDAO.getAvailableCabins();
     }
-
 }

@@ -27,7 +27,8 @@ public class UserDashboardServlet extends HttpServlet {
         }
         BookingService bookingService = new BookingServiceImpl(conn);
 
-        List<Booking> bookings = bookingService.getBookingsForUser(userId);
+        List<Booking> bookings = bookingService.getUserBookings(userId);
+
 
         request.setAttribute("bookings", bookings);
         RequestDispatcher dispatcher = request.getRequestDispatcher("/user-dashboard.jsp");

@@ -38,15 +38,14 @@
         <div class="cabin-card">
             <h3><%= cabin.getName() %></h3>
             <p><b>Location:</b> <%= cabin.getLocation() %></p>
-            <p><b>Price/Night:</b> ₹<%= cabin.getPricePerNight() %></p>
-            <p><b>Guests:</b> <%= cabin.getMaxGuests() %></p>
-            <p><b>Bedrooms:</b> <%= cabin.getBedrooms() %> | <b>Bathrooms:</b> <%= cabin.getBathrooms() %></p>
+            <p><b>Price/Hour:</b> ₹<%= cabin.getHourlyRate() %></p>
+            <p><b>Capacity:</b> <%= cabin.getCapacity() %></p>
+            <p><b>Amenities:</b> <%= cabin.getAmenities() %></p>
             <img src="<%= cabin.getImageUrl() %>" alt="Cabin Image" width="200px" />
 
             <!-- ✅ Book Now button -->
             <br/>
-            <a href="book-cabin.jsp?cabinId=<%= cabin.getId() %>&cabinName=<%= cabin.getName() %>&pricePerNight=<%= cabin.getPricePerNight() %>">Book Now</a>
-
+            <a href="book-cabin.jsp?cabinId=<%= cabin.getId() %>&cabinName=<%= cabin.getName() %>&pricePerHour=<%= cabin.getHourlyRate() %>" class="book-btn">Book Now</a>
         </div>
     <%
             }

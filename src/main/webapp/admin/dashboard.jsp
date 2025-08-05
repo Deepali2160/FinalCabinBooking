@@ -55,6 +55,7 @@
             color: #666;
             font-size: 0.9rem;
             margin-bottom: 10px;
+            flex-wrap: wrap;
         }
 
         .cabin-footer {
@@ -85,6 +86,33 @@
             color: #888;
             background: #f9f9f9;
             border-radius: 8px;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status.available {
+            background-color: #e6f7ee;
+            color: #00a854;
+        }
+
+        .status.unavailable {
+            background-color: #fff2f0;
+            color: #f5222d;
+        }
+
+        .status.confirmed {
+            background-color: #e6f7ee;
+            color: #00a854;
+        }
+
+        .status.pending {
+            background-color: #fff7e6;
+            color: #fa8c16;
         }
     </style>
 </head>
@@ -215,7 +243,6 @@
             </div>
 
             <!-- Recent Cabins -->
-
             <div class="recent-bookings">
                 <div class="section-header">
                     <h2 class="section-title">Recently Added Cabins</h2>
@@ -223,25 +250,26 @@
                 </div>
                 <div class="recent-cabins">
                     <c:choose>
-                        <c:when test="${not empty recentCabins}">
+                        <c:when test="${not empty recentCabins && fn:length(recentCabins) > 0}">
                             <c:forEach var="cabin" items="${recentCabins}">
                                 <div class="cabin-item">
                                     <div class="cabin-image">
-                                        <img src="${pageContext.request.contextPath}/${cabin.imageUrl}" alt="${cabin.name}">
+                                        <img src="${not empty cabin.imageUrl ? pageContext.request.contextPath.concat('/images/').concat(cabin.imageUrl) : 'https://via.placeholder.com/300x180?text=No+Image'}"
+                                             alt="${cabin.name}">
                                     </div>
                                     <div class="cabin-details">
                                         <h4>${cabin.name}</h4>
                                         <div class="cabin-meta">
-                                            <span><i class="fas fa-user-friends"></i> ${cabin.maxGuests} Guests</span>
-                                            <span><i class="fas fa-bed"></i> ${cabin.bedrooms} Bedrooms</span>
-                                            <span><i class="fas fa-shower"></i> ${cabin.bathrooms} Baths</span>
+                                            <span><i class="fas fa-user-friends"></i> ${cabin.capacity} Guests</span>
+                                            <span><i class="fas fa-map-marker-alt"></i> ${cabin.location}</span>
+                                            <span><i class="fas fa-dollar-sign"></i> $${cabin.hourlyRate}/hr</span>
                                         </div>
-                                        <div class="status ${cabin.available ? 'available' : 'unavailable'}">
-                                            ${cabin.available ? 'Available' : 'Not Available'}
+                                        <div class="status ${cabin.isAvailable ? 'available' : 'unavailable'}">
+                                            ${cabin.isAvailable ? 'Available' : 'Not Available'}
                                         </div>
                                     </div>
                                     <div class="cabin-footer">
-                                        <div>₹${cabin.pricePerNight} /night</div>
+                                        <div>$${cabin.hourlyRate}/hour</div>
                                         <div>
                                             <a href="${pageContext.request.contextPath}/admin/cabin?action=edit&id=${cabin.id}"
                                                class="action-btn" title="Edit">
