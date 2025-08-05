@@ -596,4 +596,4 @@
 </script>
 
 <!-- Load Google Maps API with your key -->
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&loading=async&callback=initMap" async defer></script> this is my current code give me full updated code with css html js everthing
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&loading=async&callback=initMap" async defer></script>
