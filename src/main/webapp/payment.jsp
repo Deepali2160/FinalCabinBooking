@@ -503,10 +503,9 @@
                     });
                 }
 
-                // Main form submission handler
+                // Main form submission handler - FIXED VERSION
                 if (paymentForm) {
                     paymentForm.addEventListener('submit', function(e) {
-                        e.preventDefault();
                         console.log('📝 Form submission started');
 
                         clearErrors();
@@ -514,6 +513,7 @@
                         // Get selected payment method
                         const selectedMethodRadio = document.querySelector('input[name="paymentMethod"]:checked');
                         if (!selectedMethodRadio) {
+                            e.preventDefault();
                             alert('Please select a payment method.');
                             return false;
                         }
@@ -592,6 +592,7 @@
 
                         if (!isValid) {
                             console.log('❌ Form validation failed');
+                            e.preventDefault();
                             // Scroll to first error
                             const firstError = document.querySelector('.is-invalid');
                             if (firstError) {
@@ -601,7 +602,7 @@
                             return false;
                         }
 
-                        console.log('✅ Form validation passed');
+                        console.log('✅ Form validation passed - submitting...');
 
                         // Show loading state
                         if (payButton) {
@@ -609,19 +610,7 @@
                             payButton.disabled = true;
                         }
 
-                        // Disable form to prevent double submission
-                        const formElements = this.querySelectorAll('input, select, button');
-                        formElements.forEach(element => {
-                            if (element !== payButton) {
-                                element.disabled = true;
-                            }
-                        });
-
-                        console.log('🚀 Submitting form to server...');
-
-                        // Submit the form
-                        this.submit();
-
+                        // Form will submit naturally
                         return true;
                     });
                 }

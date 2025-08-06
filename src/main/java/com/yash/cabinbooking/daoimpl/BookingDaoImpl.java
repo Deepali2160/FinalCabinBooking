@@ -38,7 +38,7 @@ public class BookingDaoImpl implements BookingDao {
 
             int rowsAffected = stmt.executeUpdate();
 
-            // Explicit commit if auto-commit is disabled
+            // ✅ FIXED: Only commit for addBooking - this is typically called outside payment transactions
             if (!connection.getAutoCommit()) {
                 connection.commit();
                 System.out.println("DEBUG: Transaction committed explicitly");
@@ -84,6 +84,7 @@ public class BookingDaoImpl implements BookingDao {
                 Booking booking = extractBookingFromResultSet(rs);
                 System.out.println("DEBUG: Booking found - ID: " + booking.getId() +
                         ", Status: " + booking.getStatus() +
+                        ", Payment Status: " + booking.getPaymentStatus() +
                         ", Amount: " + booking.getAmount());
                 return booking;
             } else {
@@ -180,10 +181,8 @@ public class BookingDaoImpl implements BookingDao {
 
             int rowsAffected = stmt.executeUpdate();
 
-            // Commit if auto-commit is disabled
-            if (!connection.getAutoCommit()) {
-                connection.commit();
-            }
+            // ✅ FIXED: Let calling service/servlet handle transaction commits
+            // Removed: if (!connection.getAutoCommit()) { connection.commit(); }
 
             System.out.println("DEBUG: Booking update result - Rows affected: " + rowsAffected);
             return rowsAffected > 0;
@@ -210,10 +209,8 @@ public class BookingDaoImpl implements BookingDao {
             stmt.setInt(1, id);
             int rowsAffected = stmt.executeUpdate();
 
-            // Commit if auto-commit is disabled
-            if (!connection.getAutoCommit()) {
-                connection.commit();
-            }
+            // ✅ FIXED: Let calling service/servlet handle transaction commits
+            // Removed: if (!connection.getAutoCommit()) { connection.commit(); }
 
             System.out.println("DEBUG: Booking deletion result - Rows affected: " + rowsAffected);
             return rowsAffected > 0;
@@ -243,12 +240,10 @@ public class BookingDaoImpl implements BookingDao {
 
             int rowsAffected = stmt.executeUpdate();
 
-            // Commit if auto-commit is disabled
-            if (!connection.getAutoCommit()) {
-                connection.commit();
-            }
+            // ✅ FIXED: Removed individual commit - let PaymentServlet handle transaction
+            // This allows atomic payment processing (both payment_status AND booking status updates together)
 
-            System.out.println("DEBUG: Status update result - Rows affected: " + rowsAffected);
+            System.out.println("DEBUG: Status update result - Rows affected: " + rowsAffected + " (not committed yet)");
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("ERROR: Failed to update booking status - " + e.getMessage());
@@ -276,12 +271,10 @@ public class BookingDaoImpl implements BookingDao {
 
             int rowsAffected = stmt.executeUpdate();
 
-            // Commit if auto-commit is disabled
-            if (!connection.getAutoCommit()) {
-                connection.commit();
-            }
+            // ✅ FIXED: Removed individual commit - let PaymentServlet handle transaction
+            // This allows atomic payment processing (both payment_status AND booking status updates together)
 
-            System.out.println("DEBUG: Payment status update result - Rows affected: " + rowsAffected);
+            System.out.println("DEBUG: Payment status update result - Rows affected: " + rowsAffected + " (not committed yet)");
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("ERROR: Failed to update payment status - " + e.getMessage());
