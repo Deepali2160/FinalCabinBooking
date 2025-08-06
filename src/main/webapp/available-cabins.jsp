@@ -45,7 +45,8 @@
 
             <!-- ✅ Book Now button -->
             <br/>
-            <a href="book-cabin.jsp?cabinId=<%= cabin.getId() %>&cabinName=<%= cabin.getName() %>&pricePerHour=<%= cabin.getHourlyRate() %>" class="book-btn">Book Now</a>
+           <a href="cabins?action=book&id=<%= cabin.getId() %>" class="book-btn">Book Now</a>
+
         </div>
     <%
             }
