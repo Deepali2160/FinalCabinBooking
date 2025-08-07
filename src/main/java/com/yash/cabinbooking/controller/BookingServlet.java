@@ -187,10 +187,13 @@ public class BookingServlet extends HttpServlet {
             booking.setStartDate(startDate);
             booking.setEndDate(endDate);
             booking.setGuests(Integer.parseInt(guestsStr));
-            booking.setStatus("pending");
+
+            // SET APPROVAL STATUS TO pending_approval TO ENFORCE ADMIN REVIEW
+            booking.setApprovalStatus("pending_approval");
+            booking.setStatus("pending_approval"); // You can keep this or just set approvalStatus
             booking.setPaymentStatus("unpaid");
 
-            System.out.println("DEBUG: Booking object created - User: " + booking.getUserId() +
+            System.out.println("DEBUG: Booking object created with approval status pending_approval - User: " + booking.getUserId() +
                     ", Cabin: " + booking.getCabinId() +
                     ", Guests: " + booking.getGuests());
 
@@ -253,69 +256,17 @@ public class BookingServlet extends HttpServlet {
             System.out.println("DEBUG: Booking creation result: " + success);
 
             if (success) {
-                // Explicit commit to ensure booking is saved
+                // Commit after booking creation
                 conn.commit();
                 System.out.println("DEBUG: Booking committed to database with ID: " + booking.getId());
 
-                // Try to retrieve the booking immediately
-                Booking createdBooking = bookingService.getBookingById(booking.getId());
-                if (createdBooking != null) {
-                    System.out.println("DEBUG: Created booking retrieved successfully with ID: " + createdBooking.getId());
+                // Redirect user to booking list or a confirmation page indicating approval pending
+                response.sendRedirect("booking?action=list&message=Booking submitted and pending admin approval");
 
-                    // Store booking info in session for payment page
-                    HttpSession session = request.getSession();
-                    session.setAttribute("currentBooking", createdBooking);
-                    session.setAttribute("currentCabin", cabin);
-
-                    // Calculate duration for display
-                    long displayHours = Duration.between(createdBooking.getStartDate(),
-                            createdBooking.getEndDate()).toHours();
-                    session.setAttribute("duration", displayHours);
-
-                    // Redirect to payment page
-                    System.out.println("DEBUG: Redirecting to payment page");
-                    response.sendRedirect("payment?action=show&bookingId=" + createdBooking.getId());
-                    return;
-                } else {
-                    // Fallback: Try getting by user bookings
-                    System.out.println("DEBUG: Direct retrieval failed, trying user bookings");
-                    List<Booking> userBookings = bookingService.getUserBookings(booking.getUserId());
-                    if (!userBookings.isEmpty()) {
-                        // Find the most recent booking (should be the one we just created)
-                        Booking fallbackBooking = userBookings.stream()
-                                .filter(b -> b.getCabinId() == booking.getCabinId() &&
-                                        b.getStartDate().equals(booking.getStartDate()) &&
-                                        Math.abs(b.getAmount() - booking.getAmount()) < 0.01)
-                                .findFirst()
-                                .orElse(userBookings.get(0));
-
-                        System.out.println("DEBUG: Fallback booking found with ID: " + fallbackBooking.getId());
-
-                        // Store booking info in session for payment page
-                        HttpSession session = request.getSession();
-                        session.setAttribute("currentBooking", fallbackBooking);
-                        session.setAttribute("currentCabin", cabin);
-
-                        // Calculate duration for display
-                        long displayHours = Duration.between(fallbackBooking.getStartDate(),
-                                fallbackBooking.getEndDate()).toHours();
-                        session.setAttribute("duration", displayHours);
-
-                        // Redirect to payment page
-                        System.out.println("DEBUG: Redirecting to payment page via fallback");
-                        response.sendRedirect("payment?action=show&bookingId=" + fallbackBooking.getId());
-                        return;
-                    } else {
-                        System.out.println("DEBUG: No user bookings found after creation");
-                        response.sendRedirect("booking?action=list&success=created");
-                        return;
-                    }
-                }
             } else {
                 System.out.println("DEBUG: Booking creation failed");
                 conn.rollback();
                 response.sendRedirect("cabins?action=book&id=" + booking.getCabinId() + "&error=booking_failed");
-                return;
             }
 
         } catch (NumberFormatException e) {
@@ -333,6 +284,7 @@ public class BookingServlet extends HttpServlet {
             response.sendRedirect("cabins?error=booking_error");
         }
     }
+
 
     private void listBookings(HttpServletRequest request, HttpServletResponse response,
                               BookingService bookingService) throws ServletException, IOException {

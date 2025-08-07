@@ -25,7 +25,7 @@ public final class DBConnection {
                         BasicDataSource ds = new BasicDataSource();
                         ds.setUrl("jdbc:mysql://localhost:3306/cabinbooking?useSSL=false");
                         ds.setUsername("root");
-                        ds.setPassword("root");
+                        ds.setPassword("manav1904");
 
                         // Connection pool configuration
                         ds.setMinIdle(5);

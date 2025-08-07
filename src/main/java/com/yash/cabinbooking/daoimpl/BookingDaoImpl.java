@@ -2,6 +2,7 @@ package com.yash.cabinbooking.daoimpl;
 
 import com.yash.cabinbooking.dao.BookingDao;
 import com.yash.cabinbooking.model.Booking;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -14,10 +15,24 @@ public class BookingDaoImpl implements BookingDao {
         this.connection = connection;
         System.out.println("DEBUG: BookingDaoImpl initialized with connection: " + (connection != null));
     }
-
+    @Override
+    public int countBookingsByApprovalStatus(String approvalStatus) {
+        String sql = "SELECT COUNT(*) FROM bookings WHERE approval_status = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, approvalStatus);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
     @Override
     public boolean addBooking(Booking booking) {
-        String sql = "INSERT INTO bookings (user_id, cabin_id, start_date, end_date, guests, amount, status, payment_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO bookings (user_id, cabin_id, start_date, end_date, guests, amount, status, payment_status, approval_status, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         System.out.println("DEBUG: Adding booking - User: " + booking.getUserId() +
                 ", Cabin: " + booking.getCabinId() +
@@ -33,12 +48,13 @@ public class BookingDaoImpl implements BookingDao {
             stmt.setDouble(6, booking.getAmount());
             stmt.setString(7, booking.getStatus() != null ? booking.getStatus() : "pending");
             stmt.setString(8, booking.getPaymentStatus() != null ? booking.getPaymentStatus() : "unpaid");
-            stmt.setTimestamp(9, Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setTimestamp(10, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setString(9, booking.getApprovalStatus() != null ? booking.getApprovalStatus() : "pending_approval");
+            Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+            stmt.setTimestamp(10, now);
+            stmt.setTimestamp(11, now);
 
             int rowsAffected = stmt.executeUpdate();
 
-            // ✅ FIXED: Only commit for addBooking - this is typically called outside payment transactions
             if (!connection.getAutoCommit()) {
                 connection.commit();
                 System.out.println("DEBUG: Transaction committed explicitly");
@@ -58,7 +74,6 @@ public class BookingDaoImpl implements BookingDao {
         } catch (SQLException e) {
             System.err.println("ERROR: Failed to add booking - " + e.getMessage());
             e.printStackTrace();
-            // Rollback on error
             try {
                 if (!connection.getAutoCommit()) {
                     connection.rollback();
@@ -73,7 +88,14 @@ public class BookingDaoImpl implements BookingDao {
 
     @Override
     public Booking getBookingById(int id) {
-        String sql = "SELECT * FROM bookings WHERE id = ?";
+        String sql = "SELECT b.*, u.name AS user_name, u.email AS user_email, c.name AS cabin_name, c.location AS cabin_location, " +
+                "a.name AS approved_by_name " +
+                "FROM bookings b " +
+                "JOIN users u ON b.user_id = u.id " +
+                "JOIN cabins c ON b.cabin_id = c.id " +
+                "LEFT JOIN users a ON b.approved_by = a.id " +
+                "WHERE b.id = ?";
+
         System.out.println("DEBUG: Getting booking by ID: " + id);
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -81,11 +103,12 @@ public class BookingDaoImpl implements BookingDao {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                Booking booking = extractBookingFromResultSet(rs);
+                Booking booking = extractBookingFromResultSetWithDetails(rs);
                 System.out.println("DEBUG: Booking found - ID: " + booking.getId() +
                         ", Status: " + booking.getStatus() +
                         ", Payment Status: " + booking.getPaymentStatus() +
-                        ", Amount: " + booking.getAmount());
+                        ", Amount: " + booking.getAmount() +
+                        ", Approval Status: " + booking.getApprovalStatus());
                 return booking;
             } else {
                 System.out.println("DEBUG: No booking found with ID: " + id);
@@ -164,7 +187,8 @@ public class BookingDaoImpl implements BookingDao {
 
     @Override
     public boolean updateBooking(Booking booking) {
-        String sql = "UPDATE bookings SET user_id=?, cabin_id=?, start_date=?, end_date=?, guests=?, amount=?, status=?, payment_status=?, updated_at=? WHERE id=?";
+        String sql = "UPDATE bookings SET user_id=?, cabin_id=?, start_date=?, end_date=?, guests=?, amount=?, status=?, payment_status=?, updated_at=?, " +
+                "approval_status=?, approved_by=?, approved_at=?, admin_remarks=?, rejection_reason=? WHERE id=?";
         System.out.println("DEBUG: Updating booking ID: " + booking.getId());
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -177,12 +201,25 @@ public class BookingDaoImpl implements BookingDao {
             stmt.setString(7, booking.getStatus());
             stmt.setString(8, booking.getPaymentStatus());
             stmt.setTimestamp(9, Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setInt(10, booking.getId());
+
+            // Approval fields
+            stmt.setString(10, booking.getApprovalStatus());
+            if (booking.getApprovedBy() != null) {
+                stmt.setInt(11, booking.getApprovedBy());
+            } else {
+                stmt.setNull(11, Types.INTEGER);
+            }
+            if (booking.getApprovedAt() != null) {
+                stmt.setTimestamp(12, Timestamp.valueOf(booking.getApprovedAt()));
+            } else {
+                stmt.setNull(12, Types.TIMESTAMP);
+            }
+            stmt.setString(13, booking.getAdminRemarks());
+            stmt.setString(14, booking.getRejectionReason());
+
+            stmt.setInt(15, booking.getId());
 
             int rowsAffected = stmt.executeUpdate();
-
-            // ✅ FIXED: Let calling service/servlet handle transaction commits
-            // Removed: if (!connection.getAutoCommit()) { connection.commit(); }
 
             System.out.println("DEBUG: Booking update result - Rows affected: " + rowsAffected);
             return rowsAffected > 0;
@@ -208,9 +245,6 @@ public class BookingDaoImpl implements BookingDao {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
             int rowsAffected = stmt.executeUpdate();
-
-            // ✅ FIXED: Let calling service/servlet handle transaction commits
-            // Removed: if (!connection.getAutoCommit()) { connection.commit(); }
 
             System.out.println("DEBUG: Booking deletion result - Rows affected: " + rowsAffected);
             return rowsAffected > 0;
@@ -240,10 +274,7 @@ public class BookingDaoImpl implements BookingDao {
 
             int rowsAffected = stmt.executeUpdate();
 
-            // ✅ FIXED: Removed individual commit - let PaymentServlet handle transaction
-            // This allows atomic payment processing (both payment_status AND booking status updates together)
-
-            System.out.println("DEBUG: Status update result - Rows affected: " + rowsAffected + " (not committed yet)");
+            System.out.println("DEBUG: Status update result - Rows affected: " + rowsAffected);
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("ERROR: Failed to update booking status - " + e.getMessage());
@@ -271,10 +302,7 @@ public class BookingDaoImpl implements BookingDao {
 
             int rowsAffected = stmt.executeUpdate();
 
-            // ✅ FIXED: Removed individual commit - let PaymentServlet handle transaction
-            // This allows atomic payment processing (both payment_status AND booking status updates together)
-
-            System.out.println("DEBUG: Payment status update result - Rows affected: " + rowsAffected + " (not committed yet)");
+            System.out.println("DEBUG: Payment status update result - Rows affected: " + rowsAffected);
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("ERROR: Failed to update payment status - " + e.getMessage());
@@ -290,13 +318,155 @@ public class BookingDaoImpl implements BookingDao {
         }
     }
 
+    // === New method: Update approval status and related info ===
+    @Override
+    public boolean updateApprovalStatus(int bookingId, String approvalStatus, Integer approvedBy, String adminRemarks, String rejectionReason) {
+        String sql = "UPDATE bookings SET approval_status = ?, approved_by = ?, approved_at = ?, admin_remarks = ?, rejection_reason = ?, updated_at = ? WHERE id = ?";
+        System.out.println("DEBUG: Updating approval status - Booking ID: " + bookingId + ", ApprovalStatus: " + approvalStatus);
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, approvalStatus);
+
+            if (approvedBy != null) {
+                stmt.setInt(2, approvedBy);
+            } else {
+                stmt.setNull(2, Types.INTEGER);
+            }
+
+            stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+
+            stmt.setString(4, adminRemarks);
+            stmt.setString(5, rejectionReason);
+            stmt.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setInt(7, bookingId);
+
+            int rowsAffected = stmt.executeUpdate();
+
+            System.out.println("DEBUG: Approval status update result - Rows affected: " + rowsAffected);
+            return rowsAffected > 0;
+
+        } catch (SQLException e) {
+            System.err.println("ERROR: Failed to update approval status - " + e.getMessage());
+            e.printStackTrace();
+            try {
+                if (!connection.getAutoCommit()) {
+                    connection.rollback();
+                    System.out.println("DEBUG: Rollback on approval status update");
+                }
+            } catch (SQLException rollbackEx) {
+                System.err.println("ERROR: Rollback on approval status update failed - " + rollbackEx.getMessage());
+            }
+            return false;
+        }
+    }
+
+    // === New method: Get bookings by approval status ===
+    @Override
+    public List<Booking> getBookingsByApprovalStatus(String approvalStatus) {
+        List<Booking> bookings = new ArrayList<>();
+        String sql = "SELECT b.*, u.name AS user_name, u.email AS user_email, c.name AS cabin_name, c.location AS cabin_location, " +
+                "a.name AS approved_by_name " +
+                "FROM bookings b " +
+                "JOIN users u ON b.user_id = u.id " +
+                "JOIN cabins c ON b.cabin_id = c.id " +
+                "LEFT JOIN users a ON b.approved_by = a.id " +
+                "WHERE b.approval_status = ? " +
+                "ORDER BY b.created_at DESC";
+
+        System.out.println("DEBUG: Getting bookings with approval status: " + approvalStatus);
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, approvalStatus);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                bookings.add(extractBookingFromResultSetWithDetails(rs));
+            }
+
+            System.out.println("DEBUG: Retrieved " + bookings.size() + " bookings with approval status '" + approvalStatus + "'");
+        } catch (SQLException e) {
+            System.err.println("ERROR: Failed to get bookings by approval status - " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return bookings;
+    }
+
+    // === New method: Get all bookings with joined user/cabin/admin info (optional for dashboard) ===
+    @Override
+    public List<Booking> getBookingsWithDetails() {
+        List<Booking> bookings = new ArrayList<>();
+        String sql = "SELECT b.*, u.name AS user_name, u.email AS user_email, c.name AS cabin_name, c.location AS cabin_location, " +
+                "a.name AS approved_by_name " +
+                "FROM bookings b " +
+                "JOIN users u ON b.user_id = u.id " +
+                "JOIN cabins c ON b.cabin_id = c.id " +
+                "LEFT JOIN users a ON b.approved_by = a.id " +
+                "ORDER BY b.created_at DESC";
+
+        System.out.println("DEBUG: Getting all bookings with details");
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                bookings.add(extractBookingFromResultSetWithDetails(rs));
+            }
+
+            System.out.println("DEBUG: Retrieved " + bookings.size() + " bookings with details");
+        } catch (SQLException e) {
+            System.err.println("ERROR: Failed to get bookings with details - " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return bookings;
+    }
+
+    // Helper method to extract Booking with joined user/cabin/admin info
+    private Booking extractBookingFromResultSetWithDetails(ResultSet rs) throws SQLException {
+        Booking booking = new Booking();
+        booking.setId(rs.getInt("id"));
+        booking.setUserId(rs.getInt("user_id"));
+        booking.setCabinId(rs.getInt("cabin_id"));
+
+        Timestamp startTime = rs.getTimestamp("start_date");
+        Timestamp endTime = rs.getTimestamp("end_date");
+        Timestamp createdTime = rs.getTimestamp("created_at");
+        Timestamp updatedTime = rs.getTimestamp("updated_at");
+        Timestamp approvedAtTime = rs.getTimestamp("approved_at");
+
+        if (startTime != null) booking.setStartDate(startTime.toLocalDateTime());
+        if (endTime != null) booking.setEndDate(endTime.toLocalDateTime());
+        if (createdTime != null) booking.setCreatedAt(createdTime.toLocalDateTime());
+        if (updatedTime != null) booking.setUpdatedAt(updatedTime.toLocalDateTime());
+        if (approvedAtTime != null) booking.setApprovedAt(approvedAtTime.toLocalDateTime());
+
+        booking.setGuests(rs.getInt("guests"));
+        booking.setAmount(rs.getDouble("amount"));
+        booking.setStatus(rs.getString("status"));
+        booking.setPaymentStatus(rs.getString("payment_status"));
+        booking.setApprovalStatus(rs.getString("approval_status"));
+        int approvedBy = rs.getInt("approved_by");
+        booking.setApprovedBy(rs.wasNull() ? null : approvedBy);
+        booking.setAdminRemarks(rs.getString("admin_remarks"));
+        booking.setRejectionReason(rs.getString("rejection_reason"));
+
+        booking.setUserName(rs.getString("user_name"));
+        booking.setUserEmail(rs.getString("user_email"));
+        booking.setCabinName(rs.getString("cabin_name"));
+        booking.setCabinLocation(rs.getString("cabin_location"));
+        booking.setApprovedByName(rs.getString("approved_by_name"));
+
+        return booking;
+    }
+
+    // Extract basic Booking without joined info
     private Booking extractBookingFromResultSet(ResultSet rs) throws SQLException {
         Booking booking = new Booking();
         booking.setId(rs.getInt("id"));
         booking.setUserId(rs.getInt("user_id"));
         booking.setCabinId(rs.getInt("cabin_id"));
 
-        // Handle potential null timestamps
         Timestamp startTime = rs.getTimestamp("start_date");
         Timestamp endTime = rs.getTimestamp("end_date");
         Timestamp createdTime = rs.getTimestamp("created_at");
@@ -311,6 +481,19 @@ public class BookingDaoImpl implements BookingDao {
         booking.setAmount(rs.getDouble("amount"));
         booking.setStatus(rs.getString("status"));
         booking.setPaymentStatus(rs.getString("payment_status"));
+
+        // Set approval fields only if present - for pure bookings table select this may be NULL
+        try {
+            booking.setApprovalStatus(rs.getString("approval_status"));
+            int approvedBy = rs.getInt("approved_by");
+            booking.setApprovedBy(rs.wasNull() ? null : approvedBy);
+            booking.setApprovedAt(rs.getTimestamp("approved_at") != null
+                    ? rs.getTimestamp("approved_at").toLocalDateTime() : null);
+            booking.setAdminRemarks(rs.getString("admin_remarks"));
+            booking.setRejectionReason(rs.getString("rejection_reason"));
+        } catch (SQLException ignore) {
+            // ignore if columns not selected
+        }
 
         return booking;
     }

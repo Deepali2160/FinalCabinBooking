@@ -5,21 +5,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cabinest - Admin Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css" />
     <style>
-        /* Additional styles for dynamic content */
+        /* Your existing styles exactly as before */
         .recent-cabins {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
-
         .cabin-item {
             border: 1px solid #e0e0e0;
             border-radius: 8px;
@@ -27,28 +26,23 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             background: white;
         }
-
         .cabin-item:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
-
         .cabin-image img {
             width: 100%;
             height: 180px;
             object-fit: cover;
         }
-
         .cabin-details {
             padding: 15px;
         }
-
         .cabin-details h4 {
             margin: 0 0 10px 0;
             font-size: 1.1rem;
             color: #333;
         }
-
         .cabin-meta {
             display: flex;
             gap: 15px;
@@ -57,7 +51,6 @@
             margin-bottom: 10px;
             flex-wrap: wrap;
         }
-
         .cabin-footer {
             display: flex;
             justify-content: space-between;
@@ -65,12 +58,10 @@
             padding: 15px;
             border-top: 1px solid #f0f0f0;
         }
-
         .cabin-footer > div:first-child {
             font-weight: 600;
             color: var(--primary);
         }
-
         .action-btn {
             background: none;
             border: none;
@@ -79,7 +70,6 @@
             font-size: 1rem;
             margin-left: 10px;
         }
-
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -87,29 +77,24 @@
             background: #f9f9f9;
             border-radius: 8px;
         }
-
         .status {
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 0.8rem;
             font-weight: 500;
         }
-
         .status.available {
             background-color: #e6f7ee;
             color: #00a854;
         }
-
         .status.unavailable {
             background-color: #fff2f0;
             color: #f5222d;
         }
-
         .status.confirmed {
             background-color: #e6f7ee;
             color: #00a854;
         }
-
         .status.pending {
             background-color: #fff7e6;
             color: #fa8c16;
@@ -126,7 +111,7 @@
             </a>
 
             <div class="theme-toggle">
-                <input type="checkbox" id="theme-switch" hidden>
+                <input type="checkbox" id="theme-switch" hidden />
                 <label for="theme-switch" class="switch">
                     <span class="sun"><i class="fas fa-sun"></i></span>
                     <span class="moon"><i class="fas fa-moon"></i></span>
@@ -136,7 +121,7 @@
 
             <div class="user-menu">
                 <span>Admin User</span>
-                <i class="fas fa-user-circle" style="font-size: 1.5rem; margin-left: 10px;"></i>
+                <i class="fas fa-user-circle" style="font-size: 1.5rem; margin-left: 10px"></i>
             </div>
         </div>
     </nav>
@@ -169,12 +154,29 @@
 
             <!-- Stats Cards -->
             <div class="dashboard-stats">
+
                 <div class="stat-card">
                     <i class="fas fa-home"></i>
                     <h3>Total Cabins</h3>
                     <div class="value">${not empty totalCabins ? totalCabins : '0'}</div>
                     <div class="change up"><i class="fas fa-arrow-up"></i> 12% from last month</div>
                 </div>
+
+                <!-- Pending Approvals Stat Card -->
+                <div class="stat-card">
+                    <i class="fas fa-hourglass-half"></i>
+                    <h3>Pending Approvals</h3>
+                    <div class="value">
+                        <a href="${pageContext.request.contextPath}/admin/booking-approval?action=list"
+                           style="text-decoration:none; color:inherit;">
+                            <c:out value="${not empty pendingApprovals ? pendingApprovals : '0'}" />
+                        </a>
+                    </div>
+                    <div class="change">
+                        <i class="fas fa-exclamation-circle"></i> Approval Required
+                    </div>
+                </div>
+
                 <div class="stat-card">
                     <i class="fas fa-calendar-check"></i>
                     <h3>Total Bookings</h3>
@@ -255,7 +257,7 @@
                                 <div class="cabin-item">
                                     <div class="cabin-image">
                                         <img src="${not empty cabin.imageUrl ? pageContext.request.contextPath.concat('/images/').concat(cabin.imageUrl) : 'https://via.placeholder.com/300x180?text=No+Image'}"
-                                             alt="${cabin.name}">
+                                             alt="${cabin.name}" />
                                     </div>
                                     <div class="cabin-details">
                                         <h4>${cabin.name}</h4>
@@ -300,11 +302,10 @@
 
     <script src="${pageContext.request.contextPath}/assets/js/admin-dashboard.js"></script>
     <script>
-        // Confirm before deleting
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const deleteButtons = document.querySelectorAll('.action-btn .fa-trash');
-            deleteButtons.forEach(btn => {
-                btn.addEventListener('click', function(e) {
+            deleteButtons.forEach((btn) => {
+                btn.addEventListener('click', function (e) {
                     if (!confirm('Are you sure you want to delete this cabin?')) {
                         e.preventDefault();
                     }

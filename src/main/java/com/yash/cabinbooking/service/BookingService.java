@@ -18,7 +18,12 @@ public interface BookingService {
     boolean updatePaymentStatus(int bookingId, String paymentStatus);
     boolean isBookingConflict(int cabinId, LocalDateTime startDate, LocalDateTime endDate, int excludeBookingId);
     double calculateBookingAmount(int cabinId, LocalDateTime startDate, LocalDateTime endDate);
-
+    List<Booking> getBookingsByApprovalStatus(String approvalStatus);
+    int countBookingsByApprovalStatus(String approvalStatus);
+    int countBookingsApprovedThisMonth();
+    double calculateMonthlyRevenue();
     // Add this new method to match the implementation
     Cabin getCabinForBooking(int cabinId);
+    boolean updateApprovalStatus(int bookingId, String approvalStatus, Integer approvedBy, String adminRemarks, String rejectionReason);
+
 }

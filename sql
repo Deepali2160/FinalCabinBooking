@@ -1,7 +1,7 @@
 
 
-create database cabinbooking;
-use cabinbooking;
+create database cabinbookingsys;
+use cabinbookingsys;
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE users (
@@ -12,7 +12,7 @@ CREATE TABLE users (
     role VARCHAR(20) DEFAULT 'customer'
 );
 select*from users;
-------------------------------------------------------------------------------------------------------------------------------------------------------
+
 CREATE TABLE cabins (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -110,9 +110,6 @@ CREATE TABLE bookings (
     payment_status VARCHAR(20) DEFAULT 'unpaid',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    -- Foreign key constraints
     CONSTRAINT fk_booking_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_booking_cabin FOREIGN KEY (cabin_id) REFERENCES cabins(id) ON DELETE CASCADE
-);
+    CONSTRAINT fk_booking_cabin FOREIGN KEY (cabin_id) REFERENCES cabins(id) ON DELETE CASCADE);
 ---------------------------------------------------------------------------------------------------
